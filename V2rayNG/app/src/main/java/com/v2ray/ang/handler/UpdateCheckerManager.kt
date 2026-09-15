@@ -1,106 +1,64 @@
 package com.v2ray.ang.handler
 
-import android.os.Build
 import com.v2ray.ang.AppConfig
 import com.v2ray.ang.BuildConfig
 import com.v2ray.ang.dto.CheckUpdateResult
 import com.v2ray.ang.dto.GitHubRelease
 import com.v2ray.ang.dto.UrlContentRequest
-import com.v2ray.ang.extension.concatUrl
 import com.v2ray.ang.util.HttpUtil
 import com.v2ray.ang.util.JsonUtil
-import com.v2ray.ang.util.LogUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 object UpdateCheckerManager {
-    suspend fun checkForUpdate(includePreRelease: Boolean = false): CheckUpdateResult = withContext(Dispatchers.IO) {
-        val url = if (includePreRelease) {
-            AppConfig.APP_API_URL
-        } else {
-            AppConfig.APP_API_URL.concatUrl("latest")
-        }
-
-        val proxyUsername = SettingsManager.getSocksUsername()
-        val proxyPassword = SettingsManager.getSocksPassword()
-
-        var response = HttpUtil.getUrlContent(
-            UrlContentRequest(
-                url = url,
-                timeout = 5000
-            )
-        )
-        if (response.isNullOrEmpty()) {
-            val httpPort = SettingsManager.getHttpPort()
-            response = HttpUtil.getUrlContent(
-                UrlContentRequest(
-                    url = url,
-                    timeout = 5000,
-                    httpPort = httpPort,
-                    proxyUsername = proxyUsername,
-                    proxyPassword = proxyPassword
-                )
-            )
-                ?: throw IllegalStateException("Failed to get response")
-        }
-
-        val latestRelease = if (includePreRelease) {
-            JsonUtil.fromJsonSafe(response, Array<GitHubRelease>::class.java)
-                ?.firstOrNull()
-                ?: throw IllegalStateException("No pre-release found")
-        } else {
-            JsonUtil.fromJsonSafe(response, GitHubRelease::class.java)
-        }
-        if (latestRelease == null) {
-            return@withContext CheckUpdateResult(hasUpdate = false)
-        }
-
-        val latestVersion = latestRelease.tagName.removePrefix("v")
-        LogUtil.i(
-            AppConfig.TAG,
-            "Found new version: $latestVersion (current: ${BuildConfig.VERSION_NAME})"
-        )
-
-        return@withContext if (compareVersions(latestVersion, BuildConfig.VERSION_NAME) > 0) {
-            val downloadUrl = getDownloadUrl(latestRelease, Build.SUPPORTED_ABIS[0])
-            CheckUpdateResult(
-                hasUpdate = true,
-                latestVersion = latestVersion,
-                releaseNotes = latestRelease.body,
-                downloadUrl = downloadUrl,
-                isPreRelease = latestRelease.prerelease
-            )
-        } else {
-            CheckUpdateResult(hasUpdate = false)
-        }
+    suspend fun checkForUpdate(includePreRelease: Boolean = true): CheckUpdateResult = withContext(Dispatchers.IO) {
+        val response = HttpUtil.getUrlContent(UrlContentRequest(AppConfig.APP_API_URL, timeout = 10000))
+            ?: throw IllegalStateException("Release service unavailable")
+        val releases = JsonUtil.fromJsonSafe(response, Array<GitHubRelease>::class.java)
+            ?: throw IllegalStateException("Invalid release response")
+        val release = releases.filter { (includePreRelease || !it.prerelease) && universalDownloadUrl(it) != null }
+            .maxWithOrNull { a, b -> compareReleaseVersions(a.tagName, b.tagName) }
+            ?: return@withContext CheckUpdateResult(false)
+        if (compareReleaseVersions(release.tagName, BuildConfig.VERSION_NAME) <= 0)
+            return@withContext CheckUpdateResult(false)
+        CheckUpdateResult(true, release.tagName.removePrefix("v"), release.body,
+            universalDownloadUrl(release), isPreRelease = release.prerelease)
     }
+}
 
-    private fun compareVersions(version1: String, version2: String): Int {
-        val v1 = version1.split(".")
-        val v2 = version2.split(".")
+internal fun universalDownloadUrl(release: GitHubRelease): String? = release.assets.firstOrNull {
+    it.name.startsWith("Filvless-") && it.name.endsWith("-universal.apk") &&
+        it.browserDownloadUrl.startsWith("https://github.com/romkinet666-source/filvless-apk/releases/download/")
+}?.browserDownloadUrl
 
-        for (i in 0 until maxOf(v1.size, v2.size)) {
-            val num1 = if (i < v1.size) v1[i].toInt() else 0
-            val num2 = if (i < v2.size) v2[i].toInt() else 0
-            if (num1 != num2) return num1 - num2
-        }
-        return 0
+internal fun compareReleaseVersions(left: String, right: String): Int {
+    fun parts(value: String): Pair<List<Int>, String?> {
+        val text = value.removePrefix("v").substringBefore('+')
+        val pieces = text.split('-', limit = 2)
+        return pieces[0].split('.').map { it.toIntOrNull() ?: 0 } to pieces.getOrNull(1)
     }
-
-    private fun getDownloadUrl(release: GitHubRelease, abi: String): String {
-        val fDroid = "fdroid"
-
-        val assetsByAbi = release.assets.filter {
-            (it.name.contains(abi, true))
-        }
-
-        val asset = if (BuildConfig.APPLICATION_ID.contains(fDroid, ignoreCase = true)) {
-            assetsByAbi.firstOrNull { it.name.contains(fDroid) }
-        } else {
-            assetsByAbi.firstOrNull { !it.name.contains(fDroid) }
-        }
-
-        return asset?.browserDownloadUrl
-            ?: throw IllegalStateException("No compatible APK found")
+    val (a, suffixA) = parts(left)
+    val (b, suffixB) = parts(right)
+    for (i in 0 until maxOf(a.size, b.size)) {
+        val comparison = (a.getOrNull(i) ?: 0).compareTo(b.getOrNull(i) ?: 0)
+        if (comparison != 0) return comparison
     }
+    if (suffixA == suffixB) return 0
+    if (suffixA == null) return 1
+    if (suffixB == null) return -1
+    val aa = suffixA.split('.')
+    val bb = suffixB.split('.')
+    for (i in 0 until maxOf(aa.size, bb.size)) {
+        val x = aa.getOrNull(i) ?: return -1
+        val y = bb.getOrNull(i) ?: return 1
+        val nx = x.toIntOrNull(); val ny = y.toIntOrNull()
+        val comparison = when {
+            nx != null && ny != null -> nx.compareTo(ny)
+            nx != null -> -1
+            ny != null -> 1
+            else -> x.compareTo(y)
+        }
+        if (comparison != 0) return comparison
+    }
+    return 0
 }

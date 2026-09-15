@@ -133,6 +133,7 @@ class MainViewModel(
 
     private fun handleServiceEvent(event: MainServiceEvent) {
         when (event) {
+            MainServiceEvent.SubscriptionsUpdated -> setupGroupTab(forceRefresh = true)
             MainServiceEvent.StateRunning -> updateRunningState(true, clearTestingText = false)
             MainServiceEvent.StateNotRunning -> updateRunningState(false, clearTestingText = false)
             MainServiceEvent.StateStartSuccess -> {
@@ -280,6 +281,8 @@ class MainViewModel(
             is MainAction.SetPreference -> setFilvlessPreference(action.key, action.enabled)
             MainAction.ForgetSubscriptions -> forgetSubscriptions()
             is MainAction.SetLanguage, MainAction.OpenSupport, MainAction.OpenReview -> Unit // Activity-owned system actions.
+            is MainAction.SaveRouting -> saveRouting(action.vpn, action.direct)
+            MainAction.CheckAppUpdate -> checkAppUpdate(true)
             MainAction.Initialize -> initialize()
             MainAction.RefreshGroups -> setupGroupTab(forceRefresh = true)
             MainAction.TestAllServers -> testAllRealPing(true)
@@ -391,6 +394,8 @@ class MainViewModel(
 
     fun initialize() {
         if (initializationJob != null) return
+        checkAppUpdate(false)
+        refreshUiSettings()
         initializationJob = viewModelScope.launch(preloadDispatcher) {
             try {
                 initialPageReady.await()
@@ -405,7 +410,42 @@ class MainViewModel(
         }
     }
 
+    private fun saveRouting(vpn: String, direct: String) {
+        viewModelScope.launch(ioDispatcher) {
+            try {
+                val routes = com.v2ray.ang.handler.FilvlessRouting(vpn, direct)
+                if (com.v2ray.ang.handler.FilvlessRoutingStore.save(routes)) {
+                    _uiState.update { it.copy(routingVpn = vpn, routingDirect = direct, routingError = false, routingSaved = it.routingSaved + 1) }
+                } else toastError(R.string.toast_failure)
+            } catch (_: IllegalArgumentException) {
+                _uiState.update { it.copy(routingError = true) }
+            }
+        }
+    }
+
+    private fun checkAppUpdate(manual: Boolean) {
+        if (uiState.value.checkingAppUpdate) return
+        _uiState.update { it.copy(checkingAppUpdate = true) }
+        viewModelScope.launch {
+            try {
+                val result = com.v2ray.ang.handler.UpdateCheckerManager.checkForUpdate(true)
+                _uiState.update { it.copy(appUpdate = result.takeIf { result.hasUpdate }) }
+                if (manual && !result.hasUpdate) toast(dataSource.getString(R.string.update_already_latest_version))
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                if (manual) toastError(R.string.toast_failure)
+            } finally {
+                _uiState.update { it.copy(checkingAppUpdate = false) }
+            }
+        }
+    }
+
     fun refreshUiSettings() {
+        viewModelScope.launch(ioDispatcher) {
+            val routes = com.v2ray.ang.handler.FilvlessRoutingStore.read()
+            _uiState.update { it.copy(routingVpn = routes.vpn, routingDirect = routes.direct) }
+        }
         refreshFilvlessPreferences()
         _uiState.update {
             it.copy(
@@ -599,6 +639,7 @@ class MainViewModel(
                     val (count, countSub) = dataSource.importBatchConfig(
                         configText, uiState.value.selectedGroupId, true
                     )
+                    dataSource.syncSubscriptions()
                     when {
                         count > 0 -> {
                             toast(dataSource.getString(R.string.title_import_config_count, count))

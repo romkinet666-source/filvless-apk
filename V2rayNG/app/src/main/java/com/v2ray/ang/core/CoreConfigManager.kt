@@ -39,10 +39,11 @@ object CoreConfigManager {
                     guid = guid,
                     errorMessage = "Failed to build config context"
                 )
-            if (configContext.isCustom) {
-                return buildV2rayCustomConfig(configContext)
-            }
-            return toConfigResult(configContext, buildUnifiedConfig(configContext))
+            val result = if (configContext.isCustom) buildV2rayCustomConfig(configContext)
+                else toConfigResult(configContext, buildUnifiedConfig(configContext))
+            if (result.status) result.content = com.v2ray.ang.handler.applyFilvlessRouting(
+                result.content, com.v2ray.ang.handler.FilvlessRoutingStore.read())
+            return result
         } catch (e: Exception) {
             LogUtil.e(AppConfig.TAG, "Failed to get V2ray config", e)
             return ConfigResult(

@@ -37,6 +37,8 @@ internal fun FilvlessSettingsContent(
     onSubscription: () -> Unit,
     onAbout: () -> Unit,
     onForget: () -> Unit,
+    onRouting: () -> Unit,
+    onApps: () -> Unit,
     onAction: (MainAction) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
@@ -65,7 +67,14 @@ internal fun FilvlessSettingsContent(
             }
             SettingsLink(R.drawable.ic_translate_24dp, R.string.title_language, language, onLanguage)
         }
+        SettingsGroup(R.string.fv_routing) {
+            SettingsLink(R.drawable.fv_ping, R.string.fv_routing_sites, onClick = onRouting)
+            SettingsLink(R.drawable.fv_phone, R.string.fv_routing_apps, onClick = onApps)
+        }
         SettingsGroup(R.string.fv_functions) {
+            SettingsToggle(R.drawable.fv_ping, R.string.fv_auto_update, R.string.fv_auto_update_hint,
+                state.preferences.autoUpdateSubscriptions, state.preferencesLoaded) { onAction(MainAction.SetPreference(FilvlessPreference.AUTO_UPDATE_SUBSCRIPTIONS, it)) }
+
             SettingsToggle(R.drawable.fv_power, R.string.fv_auto_connect, R.string.fv_auto_connect_hint,
                 state.preferences.autoConnect, state.preferencesLoaded) { onAction(MainAction.SetPreference(FilvlessPreference.AUTO_CONNECT, it)) }
             SettingsToggle(R.drawable.fv_phone, R.string.fv_haptics, R.string.fv_haptics_hint,
@@ -74,6 +83,8 @@ internal fun FilvlessSettingsContent(
                 state.preferences.visualEffects, state.preferencesLoaded) { onAction(MainAction.SetPreference(FilvlessPreference.VISUAL_EFFECTS, it)) }
         }
         SettingsGroup(R.string.fv_information) {
+            SettingsLink(R.drawable.fv_ping, R.string.fv_check_update,
+                if (state.checkingAppUpdate) "…" else null, onClick = { onAction(MainAction.CheckAppUpdate) })
             SettingsLink(R.drawable.ic_about_24dp, R.string.fv_about, onClick = onAbout)
             SettingsLink(R.drawable.ic_feedback_24dp, R.string.fv_review, onClick = { onAction(MainAction.OpenReview) })
             SettingsLink(R.drawable.fv_headphones, R.string.fv_support, onClick = { onAction(MainAction.OpenSupport) })

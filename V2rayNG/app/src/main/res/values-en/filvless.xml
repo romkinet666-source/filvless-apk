@@ -65,4 +65,17 @@
     <string name="fv_protocol">%1$s | %2$s</string>
     <string name="fv_selected">Selected</string>
     <string name="fv_test">Check server availability</string>
+    <string name="fv_auto_update">Auto-update subscriptions</string>
+    <string name="fv_auto_update_hint">Every 6 hours when internet is available</string>
+    <string name="fv_routing">Routing</string>
+    <string name="fv_routing_sites">Websites</string>
+    <string name="fv_routing_apps">Applications</string>
+    <string name="fv_routing_hint">Enter one domain per line, for example example.com. Subdomains are included. Other traffic follows your subscription rules. Saving reconnects an active VPN.</string>
+    <string name="fv_routing_vpn">Through VPN</string>
+    <string name="fv_routing_direct">Direct connection</string>
+    <string name="fv_routing_error">Check domain names. A domain or its subdomains cannot be in both lists. Maximum 200 entries per list.</string>
+    <string name="fv_save">Save</string>
+    <string name="fv_check_update">Check for app updates</string>
+    <string name="fv_update_available">Filvless %1$s is available</string>
+    <string name="fv_download_update">Download</string>
 </resources>

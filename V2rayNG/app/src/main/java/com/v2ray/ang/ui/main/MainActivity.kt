@@ -97,6 +97,7 @@ class MainActivity : HelperBaseComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         mainViewModel.onAction(MainAction.Initialize)
+        com.v2ray.ang.handler.FilvlessAppUpdates.schedule(this)
 
         checkAndRequestPermission(PermissionType.POST_NOTIFICATIONS) {}
         if (savedInstanceState == null) {
@@ -106,6 +107,11 @@ class MainActivity : HelperBaseComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        mainViewModel.onAction(MainAction.RefreshGroups)
     }
 
     @Composable

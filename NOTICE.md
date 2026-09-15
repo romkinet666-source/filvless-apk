@@ -29,3 +29,6 @@ Correct localized app labels; compact fixed connection controls, flat server lis
 
 ## Filvless 0.4.0-preview
 User-supplied launcher artwork with an adaptive vector rendition; compact server rows, header ping action, connection vibration and stronger purple connection animation.
+
+## Filvless 0.5.0-preview
+Opt-in periodic subscription refresh with retry handling; Filvless universal APK update discovery and Android notifications; explicit domain routing overlays for generated and custom Xray configurations; application routing access and restart handling. Added unit and Android worker integration tests.

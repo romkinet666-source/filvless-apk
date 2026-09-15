@@ -47,6 +47,10 @@ class MainRepository(
     private val serviceReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             val safeIntent = intent ?: return
+            if (safeIntent.action == "${AppConfig.ANG_PACKAGE}.SUBSCRIPTIONS_UPDATED") {
+                mainServiceEventChannel.trySend(MainServiceEvent.SubscriptionsUpdated)
+                return
+            }
             val requestId = safeIntent.getStringExtra(MessageHelper.EXTRA_REQUEST_ID).orEmpty()
             val event = when (safeIntent.getIntExtra("key", 0)) {
                 AppConfig.MSG_STATE_RUNNING -> MainServiceEvent.StateRunning
@@ -82,7 +86,7 @@ class MainRepository(
         ContextCompat.registerReceiver(
             app,
             serviceReceiver,
-            IntentFilter(AppConfig.BROADCAST_ACTION_ACTIVITY),
+            IntentFilter(AppConfig.BROADCAST_ACTION_ACTIVITY).apply { addAction("${AppConfig.ANG_PACKAGE}.SUBSCRIPTIONS_UPDATED") },
             Utils.receiverFlags()
         )
         MessageHelper.sendMsg2Service(app, AppConfig.MSG_REGISTER_CLIENT, "")
@@ -110,11 +114,15 @@ class MainRepository(
         autoConnect = MmkvManager.decodeSettingsBool(FilvlessPreference.AUTO_CONNECT.storageKey, false),
         haptics = MmkvManager.decodeSettingsBool(FilvlessPreference.HAPTICS.storageKey, true),
         visualEffects = MmkvManager.decodeSettingsBool(FilvlessPreference.VISUAL_EFFECTS.storageKey, true),
+        autoUpdateSubscriptions = MmkvManager.decodeSettingsBool(FilvlessPreference.AUTO_UPDATE_SUBSCRIPTIONS.storageKey, false),
         language = MmkvManager.decodeSettingsString(AppConfig.PREF_LANGUAGE, "auto") ?: "auto",
     )
 
-    override fun writeFilvlessPreference(key: FilvlessPreference, enabled: Boolean): Boolean =
-        MmkvManager.encodeSettings(key.storageKey, enabled)
+    override fun writeFilvlessPreference(key: FilvlessPreference, enabled: Boolean): Boolean {
+        val saved = MmkvManager.encodeSettings(key.storageKey, enabled)
+        if (saved && key == FilvlessPreference.AUTO_UPDATE_SUBSCRIPTIONS) SubscriptionUpdater.sync(app, true)
+        return saved
+    }
 
     override fun forgetSubscriptions() {
         MmkvManager.removeAllServer()

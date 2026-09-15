@@ -66,6 +66,8 @@ fun FilvlessScreen(
     val servers = allServers.filter { it.profile.subscriptionId !in deniedGroups }
     val providerDenied = deniedGroups.isNotEmpty() && servers.isEmpty()
     val context = LocalContext.current
+    var routingDialog by rememberSaveable { mutableStateOf(false) }
+    var observedRoutingSave by rememberSaveable { mutableIntStateOf(state.routingSaved) }
     var settings by rememberSaveable { mutableStateOf(false) }
     var importing by rememberSaveable { mutableStateOf(false) }
     var subscriptionText by rememberSaveable { mutableStateOf("") }
@@ -100,6 +102,13 @@ fun FilvlessScreen(
         if (state.preferences.visualEffects && (state.isRunning || state.connectionPending)) 1f else 0f,
         animationSpec = if (state.preferences.visualEffects) tween(800) else snap(), label = "connectionEmphasis",
     )
+    LaunchedEffect(state.routingSaved) {
+        if (state.routingSaved > observedRoutingSave && routingDialog) {
+            routingDialog = false
+            if (state.isRunning) onAction(MainAction.RestartService)
+        }
+        observedRoutingSave = state.routingSaved
+    }
     BackHandler(settings) { settings = false }
 
     Box(Modifier.fillMaxSize().background(Ink)) {
@@ -123,6 +132,15 @@ fun FilvlessScreen(
                     letterSpacing = if (settings) 0.sp else 2.sp)
                 if (!settings) TextButton(onClick = { openImport() }, enabled = !loading,
                     modifier = Modifier.align(Alignment.CenterEnd)) { Text(stringResource(R.string.fv_add), color = Violet) }
+            }
+            state.appUpdate?.let { update ->
+                Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp).background(Card, RoundedCornerShape(16.dp)).padding(horizontal = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(R.string.fv_update_available, update.latestVersion.orEmpty()), Modifier.weight(1f), color = Color.White, fontSize = 14.sp)
+                    TextButton(onClick = { update.downloadUrl?.let { com.v2ray.ang.util.Utils.openUri(context, it) } }) {
+                        Text(stringResource(R.string.fv_download_update), color = Violet)
+                    }
+                }
             }
             if (!settings) {
                     Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -178,6 +196,8 @@ fun FilvlessScreen(
                         onSubscription = { feedback(); subscriptionDialog = true },
                         onAbout = { feedback(); aboutDialog = true },
                         onForget = { feedback(); forgetDialog = true },
+                        onRouting = { feedback(); routingDialog = true },
+                        onApps = { feedback(); onNavigate(MainDestination.PerAppProxy) },
                         onAction = act)
                 }
             } else {
@@ -236,6 +256,7 @@ fun FilvlessScreen(
         }
     }
     }
+    if (routingDialog) FilvlessRoutingDialog(state, onDismiss = { routingDialog = false }, onSave = { vpn, direct -> act(MainAction.SaveRouting(vpn, direct)) })
     if (languagePicker) AlertDialog(
         onDismissRequest = { languagePicker = false }, containerColor = Card,
         title = { Text(stringResource(R.string.title_language)) },

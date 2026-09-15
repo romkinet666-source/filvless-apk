@@ -79,6 +79,7 @@ class PerAppProxyViewModel(application: Application) : BaseViewModel(application
         if (_perAppProxyEnabled.value != enabled) {
             _perAppProxyEnabled.value = enabled
             MmkvManager.encodeSettings(AppConfig.PREF_PER_APP_PROXY, enabled)
+            SettingsChangeManager.makeRestartService()
         }
     }
 
@@ -86,6 +87,7 @@ class PerAppProxyViewModel(application: Application) : BaseViewModel(application
         if (_bypassApps.value != enabled) {
             _bypassApps.value = enabled
             MmkvManager.encodeSettings(AppConfig.PREF_BYPASS_APPS, enabled)
+            SettingsChangeManager.makeRestartService()
         }
     }
 

@@ -619,7 +619,10 @@ object AngConfigManager {
             }
         }
         val uri = URI(Utils.fixIllegalUrl(url))
-        val subItem = SubscriptionItem()
+        val subItem = SubscriptionItem(
+            autoUpdate = MmkvManager.decodeSettingsBool("filvless_auto_update_subscriptions", false),
+            updateInterval = 360,
+        )
         subItem.remarks = uri.fragment ?: "import sub"
         subItem.url = url
         MmkvManager.encodeSubscription("", subItem)

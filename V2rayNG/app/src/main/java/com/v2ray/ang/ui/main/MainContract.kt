@@ -17,6 +17,12 @@ sealed interface MainStatus {
  * Main UI state
  */
 data class MainUiState(
+    val routingVpn: String = "",
+    val routingDirect: String = "",
+    val routingError: Boolean = false,
+    val routingSaved: Int = 0,
+    val appUpdate: com.v2ray.ang.dto.CheckUpdateResult? = null,
+    val checkingAppUpdate: Boolean = false,
     val preferences: FilvlessPreferences = FilvlessPreferences(),
     val preferencesLoaded: Boolean = false,
     val connectionPending: Boolean = false,
@@ -45,6 +51,8 @@ sealed interface MainAction {
     data object ForgetSubscriptions : MainAction
     data object OpenSupport : MainAction
     data object OpenReview : MainAction
+    data class SaveRouting(val vpn: String, val direct: String) : MainAction
+    data object CheckAppUpdate : MainAction
     data object Initialize : MainAction
     data object RefreshGroups : MainAction
     data object ToggleService : MainAction

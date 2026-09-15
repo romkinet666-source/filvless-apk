@@ -65,4 +65,17 @@
     <string name="fv_protocol">%1$s | %2$s</string>
     <string name="fv_selected">Выбран</string>
     <string name="fv_test">Проверить доступность серверов</string>
+    <string name="fv_auto_update">Автообновление подписок</string>
+    <string name="fv_auto_update_hint">Каждые 6 часов при наличии интернета</string>
+    <string name="fv_routing">Маршрутизация</string>
+    <string name="fv_routing_sites">Сайты</string>
+    <string name="fv_routing_apps">Приложения</string>
+    <string name="fv_routing_hint">По одному домену на строку, например example.com. Правила включают поддомены. Остальной трафик следует правилам подписки. Сохранение переподключит активный VPN.</string>
+    <string name="fv_routing_vpn">Через VPN</string>
+    <string name="fv_routing_direct">Напрямую</string>
+    <string name="fv_routing_error">Проверьте домены. Домен и его поддомены не должны попадать в оба списка. Не более 200 записей в каждом списке.</string>
+    <string name="fv_save">Сохранить</string>
+    <string name="fv_check_update">Обновление приложения</string>
+    <string name="fv_update_available">Доступна Filvless %1$s</string>
+    <string name="fv_download_update">Скачать</string>
 </resources>

@@ -43,8 +43,11 @@ object SubscriptionUpdater {
             }
 
         MmkvManager.decodeSubscriptions()
-            .filter { it.subscription.autoUpdate && it.subscription.url.isNotEmpty() }
+            .filter { it.subscription.url.isNotEmpty() }
             .forEach { sub ->
+                sub.subscription.autoUpdate = MmkvManager.decodeSettingsBool("filvless_auto_update_subscriptions", false)
+                sub.subscription.updateInterval = 360
+                MmkvManager.encodeSubscription(sub.guid, sub.subscription)
                 scheduleOne(
                     context = context,
                     subId = sub.guid,
@@ -102,7 +105,7 @@ object SubscriptionUpdater {
     ) {
         val subItem = MmkvManager.decodeSubscription(subId) ?: return
         val rw = RemoteWorkManager.getInstance(context)
-        if (!subItem.autoUpdate) {
+        if (!subItem.autoUpdate || !subItem.enabled) {
             cancelOne(context, subId)
             LogUtil.d(AppConfig.TAG, "SubscriptionUpdater: cancelled task for ${subItem.remarks}")
             return
@@ -176,14 +179,17 @@ object SubscriptionUpdater {
                 return Result.success()
             }
 
-            updateLastUpdatedAndReschedule(applicationContext, subId)
-
-            MessageHelper.sendMsg2SubscriptionService(
-                applicationContext,
-                SubscriptionUpdateMessage(AppConfig.MSG_SUB_UPDATE_START, true, listOf(subId))
-            )
-
-            return Result.success()
+            if (!MmkvManager.decodeSettingsBool("filvless_auto_update_subscriptions", false)) return Result.success()
+            val subscription = MmkvManager.decodeSubscription(subId) ?: return Result.success()
+            if (!subscription.enabled || !subscription.autoUpdate) return Result.success()
+            return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                val result = AngConfigManager.updateConfigViaSub(
+                    com.v2ray.ang.dto.entities.SubscriptionCache(subId, subscription)
+                )
+                if (result.successCount > 0) applicationContext.sendBroadcast(
+                    android.content.Intent("${AppConfig.ANG_PACKAGE}.SUBSCRIPTIONS_UPDATED").setPackage(AppConfig.ANG_PACKAGE))
+                if (result.failureCount > 0) Result.retry() else Result.success()
+            }
         }
     }
 }

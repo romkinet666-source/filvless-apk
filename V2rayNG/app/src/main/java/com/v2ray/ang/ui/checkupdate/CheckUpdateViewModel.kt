@@ -15,7 +15,7 @@ import kotlinx.coroutines.flow.asStateFlow
 class CheckUpdateViewModel(application: Application) : BaseViewModel(application) {
 
     private val _checkPreRelease = MutableStateFlow(
-        MmkvManager.decodeSettingsBool(AppConfig.PREF_CHECK_UPDATE_PRE_RELEASE, false)
+        MmkvManager.decodeSettingsBool(AppConfig.PREF_CHECK_UPDATE_PRE_RELEASE, true)
     )
     val checkPreRelease: StateFlow<Boolean> = _checkPreRelease.asStateFlow()
 

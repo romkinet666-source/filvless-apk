@@ -14,8 +14,8 @@ android {
         resValue("string", "filvless_package_id", "ru.filvless.vpn")
         minSdk = 24
         targetSdk = 37
-        versionCode = 5
-        versionName = "0.4.1-preview"
+        versionCode = 6
+        versionName = "0.5.0-preview"
 
         // One installer containing every supported native architecture.
         splits.abi.isEnable = false
@@ -191,6 +191,7 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation("androidx.work:work-testing:2.11.2")
     testImplementation(libs.org.mockito.mockito.inline)
     testImplementation(libs.mockito.kotlin)
     coreLibraryDesugaring(libs.desugar.jdk.libs)
