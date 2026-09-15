@@ -1,0 +1,3 @@
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item><bitmap android:src="@drawable/filvless_logo" android:gravity="fill" /></item>
+</layer-list>

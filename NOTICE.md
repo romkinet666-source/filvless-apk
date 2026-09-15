@@ -26,3 +26,6 @@ Added purple settings UI, persisted preferences, application language selection,
 
 ## Filvless 0.3.0-preview
 Correct localized app labels; compact fixed connection controls, flat server list, clipboard prefill and subscription HWID compatibility.
+
+## Filvless 0.4.0-preview
+User-supplied launcher artwork with an adaptive vector rendition; compact server rows, header ping action, connection vibration and stronger purple connection animation.

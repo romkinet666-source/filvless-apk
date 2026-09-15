@@ -3,6 +3,7 @@ package com.v2ray.ang.ui.main
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -25,6 +26,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.draw.drawWithCache
@@ -74,7 +76,7 @@ fun FilvlessScreen(
     val view = LocalView.current
     val feedback: () -> Unit = { if (state.preferences.haptics) view.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK) }
     val act: (MainAction) -> Unit = { action ->
-        feedback()
+        if (action == MainAction.ToggleService) connectionHaptic(context, state.preferences.haptics) else feedback()
         onAction(action)
     }
     val openImport: () -> Unit = {
@@ -83,8 +85,20 @@ fun FilvlessScreen(
         importing = true
     }
     val glow by animateColorAsState(
-        if (state.isRunning) Color(0xFF502075) else Color(0xFF36154F),
-        animationSpec = if (state.preferences.visualEffects) tween(650) else snap(), label = "connectionGlow",
+        when {
+            state.isRunning -> Color(0xFF812DD1)
+            state.connectionPending -> Color(0xFF5A218D)
+            else -> Color(0xFF36154F)
+        },
+        animationSpec = if (state.preferences.visualEffects) tween(950) else snap(), label = "connectionGlow",
+    )
+    val powerGlow by animateColorAsState(
+        if (state.isRunning) Color(0xFF8B39D0) else if (state.connectionPending) Color(0xFF61269A) else Color(0xFF381953),
+        animationSpec = if (state.preferences.visualEffects) tween(800) else snap(), label = "powerGlow",
+    )
+    val connectionEmphasis by animateFloatAsState(
+        if (state.preferences.visualEffects && (state.isRunning || state.connectionPending)) 1f else 0f,
+        animationSpec = if (state.preferences.visualEffects) tween(800) else snap(), label = "connectionEmphasis",
     )
     BackHandler(settings) { settings = false }
 
@@ -126,8 +140,16 @@ fun FilvlessScreen(
                             color = Color.White, fontSize = 14.sp)
                         Spacer(Modifier.height(12.dp))
                         val powerLabel = stringResource(if (state.isRunning) R.string.fv_disconnect else R.string.fv_connect)
-                        Box(Modifier.size(100.dp).background(Brush.verticalGradient(listOf(Ink, if (state.preferences.visualEffects) Color(0xFF381953) else Ink)), CircleShape)
-                            .border(2.dp, if (state.isRunning) Violet else Color(0xFFE8DEEF), CircleShape)
+                        Box(Modifier.size(100.dp).graphicsLayer {
+                            scaleX = 1f + .04f * connectionEmphasis
+                            scaleY = 1f + .04f * connectionEmphasis
+                        }.drawWithCache {
+                            val radius = size.width * .85f
+                            val halo = Brush.radialGradient(listOf(powerGlow.copy(alpha = .65f * connectionEmphasis), Color.Transparent),
+                                center = Offset(size.width / 2, size.height / 2), radius = radius)
+                            onDrawBehind { drawCircle(halo, radius = radius) }
+                        }.background(Brush.verticalGradient(listOf(Ink, if (state.preferences.visualEffects) powerGlow else Ink)), CircleShape)
+                            .border(2.dp, if (state.isRunning) Color(0xFFE5C7FF) else Color(0xFFE8DEEF), CircleShape)
                             .clickable(enabled = !state.connectionPending && (state.isRunning || (!loading && servers.any { it.guid == state.selectedGuid })), role = Role.Button) { act(MainAction.ToggleService) }
                             .semantics { contentDescription = powerLabel }, contentAlignment = Alignment.Center) {
                             if (state.connectionPending) CircularProgressIndicator(Modifier.size(44.dp), color = Violet, strokeWidth = 3.dp)
@@ -147,7 +169,7 @@ fun FilvlessScreen(
             LazyColumn(
                 modifier = Modifier.weight(1f),
                 contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp),
+                verticalArrangement = Arrangement.spacedBy(if (settings) 14.dp else 6.dp),
             ) {
             if (settings) {
                 item {
@@ -161,7 +183,15 @@ fun FilvlessScreen(
             } else {
                 item {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Text(stringResource(R.string.fv_servers), Modifier.weight(1f), color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.fv_servers), Modifier.weight(1f), color = Color.White, fontSize = 21.sp, fontWeight = FontWeight.SemiBold)
+                        IconButton(onClick = { act(MainAction.TestRealAllServers) },
+                            enabled = servers.isNotEmpty() && !providerDenied && !state.isTesting && !loading) {
+                            if (state.isTesting) CircularProgressIndicator(Modifier.size(20.dp).semantics {
+                                contentDescription = context.getString(R.string.fv_test)
+                            }, color = Violet, strokeWidth = 2.dp)
+                            else Icon(painterResource(R.drawable.fv_ping), stringResource(R.string.fv_test),
+                                tint = if (servers.isNotEmpty() && !loading) Violet else Muted.copy(alpha = .4f))
+                        }
                         TextButton(onClick = { act(MainAction.UpdateSubscriptions) }, enabled = !loading) { Text(stringResource(R.string.fv_refresh), color = Violet) }
                     }
                 }
@@ -180,23 +210,19 @@ fun FilvlessScreen(
                 items(if (providerDenied) emptyList() else servers, key = { it.guid }) { server ->
                     Row(Modifier.fillMaxWidth().background(if (state.selectedGuid == server.guid) Color(0xFF2A193A) else Color.Transparent, RoundedCornerShape(20.dp))
                         .selectable(selected = state.selectedGuid == server.guid, role = Role.RadioButton, onClick = { act(MainAction.SelectServer(server.guid)) })
-                        .padding(horizontal = 14.dp, vertical = 18.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Box(Modifier.size(42.dp).background(Color(0xFF30203F), RoundedCornerShape(14.dp)), contentAlignment = Alignment.Center) {
-                            Text(serverFlag(server.profile.remarks), Modifier.clearAndSetSemantics {}, fontSize = 25.sp)
+                        .padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.size(34.dp).background(Color(0xFF30203F), RoundedCornerShape(11.dp)), contentAlignment = Alignment.Center) {
+                            Text(serverFlag(server.profile.remarks), Modifier.clearAndSetSemantics {}, fontSize = 21.sp)
                         }
-                        Column(Modifier.weight(1f).padding(start = 16.dp)) {
-                            Text(server.profile.remarks, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Medium)
+                        Column(Modifier.weight(1f).padding(start = 10.dp)) {
+                            Text(server.profile.remarks, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Medium,
+                                maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                             Text(if (server.profile.configType == com.v2ray.ang.enums.EConfigType.CUSTOM) "VPN" else
-                                listOf(server.profile.configType.name, server.profile.network.orEmpty().uppercase()).filter { it.isNotBlank() }.joinToString(" | "), color = Muted, fontSize = 13.sp)
+                                listOf(server.profile.configType.name, server.profile.network.orEmpty().uppercase()).filter { it.isNotBlank() }.joinToString(" | "), color = Muted, fontSize = 12.sp)
                         }
                         if (state.selectedGuid == server.guid) Text(stringResource(R.string.fv_selected), color = Violet, fontSize = 12.sp)
                         if (server.testDelayMillis > 0) Text(stringResource(R.string.fv_latency, server.testDelayMillis),
                             Modifier.padding(start = 8.dp), color = Violet, fontSize = 12.sp)
-                    }
-                }
-                if (servers.isNotEmpty() && !providerDenied) item {
-                    TextButton(onClick = { act(MainAction.TestRealAllServers) }, enabled = !state.isTesting && !loading) {
-                        Text(stringResource(R.string.fv_test), color = Violet)
                     }
                 }
             }
