@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="fv_timer">%1$02d:%2$02d:%3$02d</string>
+    <string name="fv_denied_title">Subscription unavailable on this device</string>
+    <string name="fv_denied_hint">The provider returned a notice instead of servers. Contact your VPN support to enable Filvless or add another subscription.</string>
+    <string name="fv_brand">FILVLESS</string>
+    <string name="fv_back">Back</string>
+    <string name="fv_add">Add</string>
+    <string name="fv_subscription">Subscription</string>
+    <string name="fv_subscription_hint">Manage subscription links and server updates</string>
+    <string name="fv_tunnel">Routing</string>
+    <string name="fv_tunnel_hint">Connection rules for websites and networks</string>
+    <string name="fv_apps">Applications</string>
+    <string name="fv_apps_hint">Choose which applications use the VPN</string>
+    <string name="fv_advanced">Settings</string>
+    <string name="fv_advanced_hint">Language, startup and connection settings</string>
+    <string name="fv_diagnostics">Diagnostics</string>
+    <string name="fv_diagnostics_hint">Connection logs for troubleshooting</string>
+    <string name="fv_about">About</string>
+    <string name="fv_credits">Filvless • preview 0.1\nBased on v2rayNG and Xray. Component source code and licenses are available below.</string>
+    <string name="fv_licenses">Components and licenses</string>
+    <string name="fv_private">YOUR PRIVATE CONNECTION</string>
+    <string name="fv_connected">Connected</string>
+    <string name="fv_disconnected">Disconnected</string>
+    <string name="fv_disconnect">Disconnect VPN</string>
+    <string name="fv_connect">Connect VPN</string>
+    <string name="fv_select_server">Select a server to connect</string>
+    <string name="fv_servers">Servers</string>
+    <string name="fv_refresh">Refresh</string>
+    <string name="fv_empty_title">Add your subscription</string>
+    <string name="fv_empty_hint">Copy the subscription link from your VPN bot and add it here. Servers will appear after the subscription downloads.</string>
+    <string name="fv_import">Add subscription</string>
+    <string name="fv_import_hint">Paste a subscription link or connection configuration.</string>
+    <string name="fv_link">Link or configuration</string>
+    <string name="fv_cancel">Cancel</string>
+    <string name="fv_protocol">%1$s | %2$s</string>
+    <string name="fv_selected">Selected</string>
+    <string name="fv_test">Check server availability</string>
+</resources>

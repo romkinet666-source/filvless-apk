@@ -1,0 +1,2 @@
+36c32c1683ee0131cd957e963b6d999aaefe62b4d9ad88647286c39ebf9bb02c  Filvless-0.1.0-preview-arm64-v8a.apk
+e2a503594b3e22ffb0744eb16cb2bf97e3e128f67d59e00794eb598e8ca38369  Filvless-0.1.0-preview-universal.apk

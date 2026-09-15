@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="fv_timer">%1$02d:%2$02d:%3$02d</string>
+    <string name="fv_denied_title">Подписка не разрешена для этого устройства</string>
+    <string name="fv_denied_hint">Провайдер вернул служебное сообщение вместо серверов. Обратитесь в поддержку вашего VPN, чтобы разрешить подключение Filvless, или добавьте другую подписку.</string>
+    <string name="fv_brand">FILVLESS</string>
+    <string name="fv_back">Назад</string>
+    <string name="fv_add">Добавить</string>
+    <string name="fv_subscription">Подписка</string>
+    <string name="fv_subscription_hint">Управление ссылками и обновлением серверов</string>
+    <string name="fv_tunnel">Роутинг</string>
+    <string name="fv_tunnel_hint">Правила подключения для сайтов и сетей</string>
+    <string name="fv_apps">Приложения</string>
+    <string name="fv_apps_hint">Выберите приложения, которые используют VPN</string>
+    <string name="fv_advanced">Настройки</string>
+    <string name="fv_advanced_hint">Язык, запуск и параметры подключения</string>
+    <string name="fv_diagnostics">Диагностика</string>
+    <string name="fv_diagnostics_hint">Журнал подключения для поиска ошибок</string>
+    <string name="fv_about">О приложении</string>
+    <string name="fv_credits">Filvless • тестовая версия 0.1\nНа основе v2rayNG и Xray. Исходный код компонентов и условия лицензий доступны в разделе ниже.</string>
+    <string name="fv_licenses">Компоненты и лицензии</string>
+    <string name="fv_private">ВАШЕ ЛИЧНОЕ ПОДКЛЮЧЕНИЕ</string>
+    <string name="fv_connected">Подключено</string>
+    <string name="fv_disconnected">Отключено</string>
+    <string name="fv_disconnect">Отключить VPN</string>
+    <string name="fv_connect">Подключить VPN</string>
+    <string name="fv_select_server">Выберите сервер для подключения</string>
+    <string name="fv_servers">Серверы</string>
+    <string name="fv_refresh">Обновить</string>
+    <string name="fv_empty_title">Добавьте свою подписку</string>
+    <string name="fv_empty_hint">Скопируйте ссылку из вашего VPN-бота и добавьте её здесь. Серверы появятся после загрузки подписки.</string>
+    <string name="fv_import">Добавить подписку</string>
+    <string name="fv_import_hint">Вставьте ссылку на подписку или конфигурацию подключения.</string>
+    <string name="fv_link">Ссылка или конфигурация</string>
+    <string name="fv_cancel">Отмена</string>
+    <string name="fv_protocol">%1$s | %2$s</string>
+    <string name="fv_selected">Выбран</string>
+    <string name="fv_test">Проверить доступность серверов</string>
+</resources>

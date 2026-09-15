@@ -1,0 +1,51 @@
+name: Build Filvless APK
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+      - name: Install Android SDK and NDK
+        run: sdkmanager --channel=3 'platforms;android-37.0' 'build-tools;36.0.0' 'ndk;30.0.16138531'
+      - name: Build native tunnel
+        env:
+          NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/30.0.16138531
+        run: |
+          export NDK_HOME="$ANDROID_HOME/ndk/30.0.16138531"
+          bash compile-hevtun.sh
+          mkdir -p V2rayNG/app/libs
+          cp -R libs/. V2rayNG/app/libs/
+      - name: Download pinned Xray library
+        run: |
+          curl --fail --location --retry 3 https://github.com/2dust/AndroidLibXrayLite/releases/download/v26.9.9/libv2ray.aar -o V2rayNG/app/libs/libv2ray.aar
+          echo "$(cat scripts/libv2ray.sha256)  V2rayNG/app/libs/libv2ray.aar" | sha256sum --check
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Test and build
+        working-directory: V2rayNG
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:testPlaystoreDebugUnitTest :app:assemblePlaystoreDebug --console=plain
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Filvless-preview-APK
+          path: V2rayNG/app/build/outputs/apk/playstore/debug/*.apk
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unit-test-results
+          path: V2rayNG/app/build/reports/tests/testPlaystoreDebugUnitTest/
