@@ -1,1 +1,1 @@
-f43c4b48094e5b2739cd80a704c5cdbb82b8d3666fe85cb878ff8c9b5ab8c497  Filvless-0.2.0-preview-universal.apk
+622bf83e59fa1fde9b7917b3e1a516ed485de7e95ed96718cf6be334a59b36f9  Filvless-0.3.0-preview-universal.apk

@@ -482,7 +482,7 @@ object AngConfigManager {
                     return SubscriptionUpdateResult(failureCount = 1)
                 }
             }
-            LogUtil.i(AppConfig.TAG, url)
+            LogUtil.i(AppConfig.TAG, "Updating subscription")
             val userAgent = it.subscription.userAgent
             var expiresAtSeconds: Long? = null
             val captureSubscriptionInfo: (String?) -> Unit = { header ->
@@ -504,6 +504,7 @@ object AngConfigManager {
                         proxyUsername = proxyUsername,
                         proxyPassword = proxyPassword,
                         onSubscriptionInfo = captureSubscriptionInfo,
+                        deviceHeaders = com.v2ray.ang.util.SubscriptionDevice.headers(),
                     )
                 )
             } catch (e: Exception) {
@@ -518,6 +519,7 @@ object AngConfigManager {
                             userAgent = userAgent,
                             requestHeaders = requestHeaders,
                             onSubscriptionInfo = captureSubscriptionInfo,
+                        deviceHeaders = com.v2ray.ang.util.SubscriptionDevice.headers(),
                         )
                     )
                 } catch (e: Exception) {

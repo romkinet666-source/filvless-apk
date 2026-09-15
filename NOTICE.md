@@ -23,3 +23,6 @@ Filvless 0.1 — производная работа на основе v2rayNG.
 
 ## Filvless 0.2.0-preview
 Added purple settings UI, persisted preferences, application language selection, subscription expiry metadata and Telegram support links.
+
+## Filvless 0.3.0-preview
+Correct localized app labels; compact fixed connection controls, flat server list, clipboard prefill and subscription HWID compatibility.

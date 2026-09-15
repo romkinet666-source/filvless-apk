@@ -8,7 +8,6 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -29,6 +28,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.res.painterResource
@@ -59,8 +59,11 @@ fun FilvlessScreen(
     val state by mainViewModel.uiState.collectAsStateWithLifecycle()
     val loading by mainViewModel.isLoading.collectAsStateWithLifecycle()
     val serverFlow = remember(state.selectedGroupId) { mainViewModel.serversForGroup(state.selectedGroupId) }
-    val servers by serverFlow.collectAsStateWithLifecycle()
-    val providerDenied = servers.any { isUnsupportedDeviceNotice(it.profile.remarks) }
+    val allServers by serverFlow.collectAsStateWithLifecycle()
+    val deniedGroups = allServers.filter { isUnsupportedDeviceNotice(it.profile.remarks) }.map { it.profile.subscriptionId }.toSet()
+    val servers = allServers.filter { it.profile.subscriptionId !in deniedGroups }
+    val providerDenied = deniedGroups.isNotEmpty() && servers.isEmpty()
+    val context = LocalContext.current
     var settings by rememberSaveable { mutableStateOf(false) }
     var importing by rememberSaveable { mutableStateOf(false) }
     var subscriptionText by rememberSaveable { mutableStateOf("") }
@@ -73,6 +76,11 @@ fun FilvlessScreen(
     val act: (MainAction) -> Unit = { action ->
         feedback()
         onAction(action)
+    }
+    val openImport: () -> Unit = {
+        feedback()
+        subscriptionText = runCatching { com.v2ray.ang.util.Utils.getClipboard(context).orEmpty().trim() }.getOrDefault("")
+        importing = true
     }
     val glow by animateColorAsState(
         if (state.isRunning) Color(0xFF502075) else Color(0xFF36154F),
@@ -99,9 +107,43 @@ fun FilvlessScreen(
                     Modifier.align(Alignment.Center).then(if (settings) Modifier.background(Card, CircleShape).padding(horizontal = 18.dp, vertical = 12.dp) else Modifier),
                     color = Color.White, fontSize = 21.sp, fontWeight = FontWeight.SemiBold,
                     letterSpacing = if (settings) 0.sp else 2.sp)
-                if (!settings) TextButton(onClick = { feedback(); importing = true }, enabled = !loading,
+                if (!settings) TextButton(onClick = { openImport() }, enabled = !loading,
                     modifier = Modifier.align(Alignment.CenterEnd)) { Text(stringResource(R.string.fv_add), color = Violet) }
             }
+            if (!settings) {
+                    Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(stringResource(R.string.fv_timer, state.elapsedSeconds / 3600,
+                            state.elapsedSeconds / 60 % 60, state.elapsedSeconds % 60),
+                            color = Color.White, fontSize = 27.sp, letterSpacing = 3.sp)
+                        Spacer(Modifier.height(6.dp))
+                        Text(stringResource(when {
+                            state.connectionPending -> R.string.fv_connecting
+                            state.connectionFailed -> R.string.fv_connection_failed
+                            state.isRunning -> R.string.fv_connected
+                            else -> R.string.fv_disconnected
+                        }),
+                            Modifier.background(Color(0x663D2451), CircleShape).padding(horizontal = 18.dp, vertical = 6.dp),
+                            color = Color.White, fontSize = 14.sp)
+                        Spacer(Modifier.height(12.dp))
+                        val powerLabel = stringResource(if (state.isRunning) R.string.fv_disconnect else R.string.fv_connect)
+                        Box(Modifier.size(100.dp).background(Brush.verticalGradient(listOf(Ink, if (state.preferences.visualEffects) Color(0xFF381953) else Ink)), CircleShape)
+                            .border(2.dp, if (state.isRunning) Violet else Color(0xFFE8DEEF), CircleShape)
+                            .clickable(enabled = !state.connectionPending && (state.isRunning || (!loading && servers.any { it.guid == state.selectedGuid })), role = Role.Button) { act(MainAction.ToggleService) }
+                            .semantics { contentDescription = powerLabel }, contentAlignment = Alignment.Center) {
+                            if (state.connectionPending) CircularProgressIndicator(Modifier.size(44.dp), color = Violet, strokeWidth = 3.dp)
+                            else Canvas(Modifier.size(48.dp)) {
+                                val stroke = 4.dp.toPx()
+                                drawArc(Color.White, -48f, 276f, false, Offset(stroke, stroke),
+                                    Size(size.width - stroke * 2, size.height - stroke * 2), style = Stroke(stroke, cap = StrokeCap.Round))
+                                drawLine(Color.White, Offset(size.width / 2, 0f), Offset(size.width / 2, size.height * .43f), stroke, StrokeCap.Round)
+                            }
+                        }
+                        Spacer(Modifier.height(10.dp))
+                        val selected = servers.firstOrNull { it.guid == state.selectedGuid }
+                        Text(selected?.profile?.remarks ?: stringResource(R.string.fv_select_server), color = Muted, fontSize = 13.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                        if (state.isTesting) Text(mainViewModel.formatStatus(state.status), color = Violet, fontSize = 13.sp)
+                    }
+                }
             LazyColumn(
                 modifier = Modifier.weight(1f),
                 contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
@@ -118,63 +160,19 @@ fun FilvlessScreen(
                 }
             } else {
                 item {
-                    Column(Modifier.fillMaxWidth().padding(top = 30.dp, bottom = 22.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(stringResource(R.string.fv_private), color = Muted, fontSize = 13.sp, letterSpacing = 3.sp)
-                        Spacer(Modifier.height(20.dp))
-                        Text(stringResource(R.string.fv_timer, state.elapsedSeconds / 3600,
-                            state.elapsedSeconds / 60 % 60, state.elapsedSeconds % 60),
-                            color = Color.White, fontSize = 36.sp, letterSpacing = 5.sp)
-                        Spacer(Modifier.height(18.dp))
-                        Text(stringResource(when {
-                            state.connectionPending -> R.string.fv_connecting
-                            state.connectionFailed -> R.string.fv_connection_failed
-                            state.isRunning -> R.string.fv_connected
-                            else -> R.string.fv_disconnected
-                        }),
-                            Modifier.background(Color(0x663D2451), CircleShape).padding(horizontal = 22.dp, vertical = 10.dp),
-                            color = Color.White, fontSize = 17.sp)
-                        Spacer(Modifier.height(30.dp))
-                        val powerLabel = stringResource(if (state.isRunning) R.string.fv_disconnect else R.string.fv_connect)
-                        Box(Modifier.size(144.dp).background(Brush.verticalGradient(listOf(Ink, if (state.preferences.visualEffects) Color(0xFF381953) else Ink)), CircleShape)
-                            .border(2.dp, if (state.isRunning) Violet else Color(0xFFE8DEEF), CircleShape)
-                            .clickable(enabled = !state.connectionPending && (state.isRunning || (!loading && !providerDenied && state.selectedGuid != null)), role = Role.Button) { act(MainAction.ToggleService) }
-                            .semantics { contentDescription = powerLabel }, contentAlignment = Alignment.Center) {
-                            if (state.connectionPending) CircularProgressIndicator(Modifier.size(64.dp), color = Violet, strokeWidth = 3.dp)
-                            else Canvas(Modifier.size(68.dp)) {
-                                val stroke = 4.dp.toPx()
-                                drawArc(Color.White, -48f, 276f, false, Offset(stroke, stroke),
-                                    Size(size.width - stroke * 2, size.height - stroke * 2), style = Stroke(stroke, cap = StrokeCap.Round))
-                                drawLine(Color.White, Offset(size.width / 2, 0f), Offset(size.width / 2, size.height * .43f), stroke, StrokeCap.Round)
-                            }
-                        }
-                        Spacer(Modifier.height(22.dp))
-                        val selected = servers.firstOrNull { it.guid == state.selectedGuid }
-                        Text(selected?.profile?.remarks ?: stringResource(R.string.fv_select_server), color = Muted, fontSize = 15.sp)
-                        if (state.isTesting) Text(mainViewModel.formatStatus(state.status), color = Violet, fontSize = 13.sp)
-                    }
-                }
-                item {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         Text(stringResource(R.string.fv_servers), Modifier.weight(1f), color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.Bold)
                         TextButton(onClick = { act(MainAction.UpdateSubscriptions) }, enabled = !loading) { Text(stringResource(R.string.fv_refresh), color = Violet) }
                     }
                 }
                 if (loading) item { LinearProgressIndicator(Modifier.fillMaxWidth(), color = Violet, trackColor = Card) }
-                if (state.groups.size > 1) item {
-                    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        state.groups.forEach { group ->
-                            FilterChip(selected = state.selectedGroupId == group.id, onClick = { act(MainAction.SelectGroup(group.id)) },
-                                label = { Text(group.remarks) })
-                        }
-                    }
-                }
                 if ((servers.isEmpty() || providerDenied) && !loading) item {
                     Column(Modifier.fillMaxWidth().background(Card, RoundedCornerShape(26.dp)).padding(24.dp)) {
                         Text(stringResource(if (providerDenied) R.string.fv_denied_title else R.string.fv_empty_title), color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
                         Spacer(Modifier.height(12.dp))
                         Text(stringResource(if (providerDenied) R.string.fv_denied_hint else R.string.fv_empty_hint), color = Muted, lineHeight = 24.sp)
                         Spacer(Modifier.height(18.dp))
-                        Button(onClick = { importing = true }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF522680), contentColor = Color.White)) {
+                        Button(onClick = { openImport() }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF522680), contentColor = Color.White)) {
                             Text(stringResource(R.string.fv_import))
                         }
                     }
@@ -188,7 +186,8 @@ fun FilvlessScreen(
                         }
                         Column(Modifier.weight(1f).padding(start = 16.dp)) {
                             Text(server.profile.remarks, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Medium)
-                            Text(stringResource(R.string.fv_protocol, server.profile.configType.name, server.profile.network.orEmpty().uppercase()), color = Muted, fontSize = 13.sp)
+                            Text(if (server.profile.configType == com.v2ray.ang.enums.EConfigType.CUSTOM) "VPN" else
+                                listOf(server.profile.configType.name, server.profile.network.orEmpty().uppercase()).filter { it.isNotBlank() }.joinToString(" | "), color = Muted, fontSize = 13.sp)
                         }
                         if (state.selectedGuid == server.guid) Text(stringResource(R.string.fv_selected), color = Violet, fontSize = 12.sp)
                         if (server.testDelayMillis > 0) Text(stringResource(R.string.fv_latency, server.testDelayMillis),
@@ -232,7 +231,7 @@ fun FilvlessScreen(
         onDismissRequest = { subscriptionDialog = false }, containerColor = Card,
         title = { Text(stringResource(R.string.fv_subscription)) },
         text = { Text(stringResource(if (providerDenied) R.string.fv_denied_hint else R.string.fv_manage_subscription_hint)) },
-        confirmButton = { TextButton(onClick = { subscriptionDialog = false; importing = true }) { Text(stringResource(R.string.fv_import)) } },
+        confirmButton = { TextButton(onClick = { subscriptionDialog = false; openImport() }) { Text(stringResource(R.string.fv_import)) } },
         dismissButton = { TextButton(enabled = !loading, onClick = { subscriptionDialog = false; act(MainAction.UpdateSubscriptions) }) { Text(stringResource(R.string.fv_refresh)) } },
     )
     if (forgetDialog) AlertDialog(

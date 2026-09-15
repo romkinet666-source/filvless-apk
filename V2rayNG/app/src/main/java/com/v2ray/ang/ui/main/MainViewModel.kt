@@ -463,7 +463,10 @@ class MainViewModel(
 
     private fun updateGroupUi(groupId: String, servers: List<ServersCache>) {
         if (uiState.value.selectedGroupId == groupId) {
-            val subscription = dataSource.getSubscriptionItem(groupId)
+            val subscriptionId = groupId.ifEmpty {
+                servers.map { it.profile.subscriptionId }.distinct().singleOrNull().orEmpty()
+            }
+            val subscription = dataSource.getSubscriptionItem(subscriptionId)
             _uiState.update { state ->
                 if (state.selectedGroupId != groupId) state else state.copy(
                     subscriptionExpiresAt = subscription?.expiresAtSeconds,

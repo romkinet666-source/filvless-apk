@@ -104,7 +104,7 @@ class MainRepository(
     }
 
     override fun getSelectedSubscriptionId(): String =
-        MmkvManager.decodeSettingsString(AppConfig.CACHE_SUBSCRIPTION_ID, "").orEmpty()
+        ""
 
     override fun readFilvlessPreferences() = FilvlessPreferences(
         autoConnect = MmkvManager.decodeSettingsBool(FilvlessPreference.AUTO_CONNECT.storageKey, false),
@@ -150,7 +150,7 @@ class MainRepository(
 
     override fun getSubscriptions(): List<SubscriptionCache> {
         val result = mutableListOf<SubscriptionCache>()
-        if (isGroupAllDisplayEnabled()) {
+        run {
             result += SubscriptionCache(
                 guid = "",
                 subscription = SubscriptionItem().apply {

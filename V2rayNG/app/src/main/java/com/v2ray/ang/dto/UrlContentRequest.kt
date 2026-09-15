@@ -9,4 +9,5 @@ data class UrlContentRequest(
     val userAgent: String? = null,
     val requestHeaders: String? = null,
     val onSubscriptionInfo: ((String?) -> Unit)? = null,
+    val deviceHeaders: Map<String, String> = emptyMap(),
 )

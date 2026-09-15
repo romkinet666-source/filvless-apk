@@ -164,10 +164,14 @@ object HttpUtil {
 
             applyEmbeddedBasicAuthHeader(currentUrl, requestBuilder)
 
+            // Device identity is only needed by the original subscription origin.
+            if (URI(currentUrl).authority == URI(request.url!!).authority) {
+                request.deviceHeaders.forEach { (key, value) -> requestBuilder.header(key, value) }
+            }
+
 
             val headersMap = JsonUtil.parseHeadersToMap(request.requestHeaders)
             for ((key, value) in headersMap) {
-                LogUtil.d(AppConfig.TAG, "Adding custom header: $key = $value")
                 try {
                     requestBuilder.header(key, value)
                 } catch (_: IllegalArgumentException) {
