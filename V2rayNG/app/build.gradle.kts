@@ -11,6 +11,7 @@ android {
 
     defaultConfig {
         applicationId = "ru.filvless.vpn"
+        resValue("string", "filvless_package_id", "ru.filvless.vpn")
         minSdk = 24
         targetSdk = 37
         versionCode = 1
@@ -53,6 +54,7 @@ android {
         create("fdroid") {
             dimension = "distribution"
             applicationIdSuffix = ".fdroid"
+            resValue("string", "filvless_package_id", "ru.filvless.vpn.fdroid")
             buildConfigField("String", "DISTRIBUTION", "\"F-Droid\"")
         }
         create("playstore") {
