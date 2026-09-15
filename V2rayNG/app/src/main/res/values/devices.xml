@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="fv_devices">My devices</string>
+    <string name="fv_devices_manage">Manage devices</string>
+    <string name="fv_devices_hint">Devices registered to your subscription, not live connections. Anyone with your subscription link can manage this list. Keep the link private.</string>
+    <string name="fv_devices_no_subscription">Add your Filvless subscription on the home screen first. Device management supports subscriptions from sub.prostobotyg.ru.</string>
+    <string name="fv_devices_permissions">Device access is not enabled on the service yet. Contact support; the subscription itself is unchanged.</string>
+    <string name="fv_devices_invalid">The subscription is unavailable or has changed. Refresh it on the home screen.</string>
+    <string name="fv_devices_rate">Too many requests. Wait a minute and try again.</string>
+    <string name="fv_devices_missing">This device is no longer in the list. Refresh the devices.</string>
+    <string name="fv_devices_network">Could not load devices. Check your connection and try again. If a removal was interrupted, refresh the list to check its result.</string>
+    <string name="fv_devices_retry">Try again</string>
+    <string name="fv_devices_removed">Device record removed</string>
+    <string name="fv_devices_count_limit">Devices: %1$d of %2$d</string>
+    <string name="fv_devices_count">Devices: %1$d</string>
+    <string name="fv_devices_empty">No registered devices yet. They appear after the subscription is added on a device.</string>
+    <string name="fv_devices_unknown">Device</string>
+    <string name="fv_devices_current">This device</string>
+    <string name="fv_devices_last_request">Last subscription request: %1$s</string>
+    <string name="fv_devices_remove">Remove</string>
+    <string name="fv_devices_confirm_title">Remove device?</string>
+    <string name="fv_devices_confirm">Remove “%1$s” from the subscription device list? This does not revoke previously downloaded connection settings. A device with the subscription link can register again.</string>
+</resources>

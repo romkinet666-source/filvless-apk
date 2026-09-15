@@ -18,6 +18,8 @@ artifacts/
 *.key
 .env
 .env.*
+**/__pycache__/
+server/.venv/
 signing.properties
 *.iml
 Thumbs.db

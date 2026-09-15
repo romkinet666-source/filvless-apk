@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="fv_devices">Мои устройства</string>
+    <string name="fv_devices_manage">Управление устройствами</string>
+    <string name="fv_devices_hint">Устройства, добавившие подписку, а не активные подключения. Управлять списком может тот, у кого есть ссылка подписки. Не передавайте её другим.</string>
+    <string name="fv_devices_no_subscription">Сначала добавьте свою подписку Filvless на главном экране. Управление устройствами доступно для подписок sub.prostobotyg.ru.</string>
+    <string name="fv_devices_permissions">Сервис пока не разрешил доступ к устройствам. Обратитесь в поддержку. Сама подписка остаётся без изменений.</string>
+    <string name="fv_devices_invalid">Подписка недоступна или изменилась. Обновите её на главном экране.</string>
+    <string name="fv_devices_rate">Слишком много запросов. Подождите минуту и попробуйте ещё раз.</string>
+    <string name="fv_devices_missing">Этого устройства уже нет в списке. Обновите список устройств.</string>
+    <string name="fv_devices_network">Не удалось загрузить устройства. Проверьте интернет и попробуйте ещё раз. Если удаление прервалось, обновите список, чтобы проверить результат.</string>
+    <string name="fv_devices_retry">Повторить</string>
+    <string name="fv_devices_removed">Запись устройства удалена</string>
+    <string name="fv_devices_count_limit">Устройства: %1$d из %2$d</string>
+    <string name="fv_devices_count">Устройства: %1$d</string>
+    <string name="fv_devices_empty">Зарегистрированных устройств пока нет. Они появятся после добавления подписки на устройстве.</string>
+    <string name="fv_devices_unknown">Устройство</string>
+    <string name="fv_devices_current">Это устройство</string>
+    <string name="fv_devices_last_request">Последний запрос подписки: %1$s</string>
+    <string name="fv_devices_remove">Удалить</string>
+    <string name="fv_devices_confirm_title">Удалить устройство?</string>
+    <string name="fv_devices_confirm">Удалить «%1$s» из списка устройств подписки? Это не отзывает уже загруженные настройки подключения. Устройство со ссылкой подписки сможет зарегистрироваться снова.</string>
+</resources>

@@ -39,6 +39,7 @@ internal fun FilvlessSettingsContent(
     onForget: () -> Unit,
     onRouting: () -> Unit,
     onApps: () -> Unit,
+    onDevices: () -> Unit,
     onAction: (MainAction) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
@@ -58,6 +59,9 @@ internal fun FilvlessSettingsContent(
             Text(stringResource(R.string.fv_subscription), color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(12.dp))
             Text(subscriptionLabel, color = FilvlessMuted, fontSize = 16.sp, lineHeight = 24.sp)
+        }
+        SettingsGroup(R.string.fv_devices) {
+            SettingsLink(R.drawable.fv_phone, R.string.fv_devices_manage, onClick = onDevices)
         }
         SettingsGroup(R.string.fv_appearance) {
             val language = when (state.preferences.language) {

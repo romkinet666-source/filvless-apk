@@ -198,6 +198,7 @@ fun FilvlessScreen(
                         onForget = { feedback(); forgetDialog = true },
                         onRouting = { feedback(); routingDialog = true },
                         onApps = { feedback(); onNavigate(MainDestination.PerAppProxy) },
+                        onDevices = { feedback(); onNavigate(MainDestination.Devices) },
                         onAction = act)
                 }
             } else {
