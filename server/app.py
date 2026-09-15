@@ -32,16 +32,17 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
 
 
 class Panel:
-    def __init__(self, base, token):
+    def __init__(self, base, token, device_token=None):
         if base != "https://panel.fillvl.ru" or not token:
             raise ValueError("A configured HTTPS panel and API token are required")
         self.base, self.token = base, token
+        self.device_token = device_token or token
         self.opener = urllib.request.build_opener(NoRedirect())
 
     def call(self, path, body=None):
         request = urllib.request.Request(self.base + "/api" + path,
             data=None if body is None else json.dumps(body).encode(),
-            headers={"Authorization": "Bearer " + self.token, "Accept": "application/json",
+            headers={"Authorization": "Bearer " + (self.device_token if path.startswith("/hwid/") else self.token), "Accept": "application/json",
                      "Content-Type": "application/json"})
         try:
             with self.opener.open(request, timeout=10) as response:
@@ -202,4 +203,5 @@ class Gateway:
 
 
 def create_app():
-    return Gateway(Panel(os.environ["PANEL_URL"], os.environ["PANEL_TOKEN"]), os.environ["DEVICE_ID_SECRET"])
+    return Gateway(Panel(os.environ["PANEL_URL"], os.environ["PANEL_TOKEN"],
+                         os.environ.get("PANEL_DEVICE_TOKEN")), os.environ["DEVICE_ID_SECRET"])

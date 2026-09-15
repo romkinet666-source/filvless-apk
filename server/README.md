@@ -43,12 +43,16 @@ Root-only environment file (never commit real values):
 ```text
 PANEL_URL=https://panel.fillvl.ru
 PANEL_TOKEN=<restricted-panel-api-token>
+PANEL_DEVICE_TOKEN=<optional-separate-device-scope-token>
 DEVICE_ID_SECRET=<persistent-random-secret-at-least-32-characters>
 ```
 
 Install `filvless-api.service`, validate `Caddyfile` with `caddy validate`, enable
 the API and Caddy services. Caddy obtains and renews TLS automatically. Port 8765
 must remain bound to 127.0.0.1; Caddy overwrites `X-Real-IP` used by rate limiting.
+PANEL_TOKEN is used for user lookup. If PANEL_DEVICE_TOKEN is set, it is used
+for device endpoints; otherwise PANEL_TOKEN is used for both operations.
+The deployed service currently uses one token with both sets of permissions.
 Keep at least one previous release. Roll back by switching `current` to it and
 restarting only `filvless-api`. First-install removal: stop/disable `filvless-api`
 and Caddy, leaving the existing monitoring services untouched.

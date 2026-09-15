@@ -2,7 +2,7 @@ import copy
 import io
 import json
 import unittest
-from app import ApiError, Gateway, Limiter
+from app import ApiError, Gateway, Limiter, Panel
 
 CREDENTIAL = "test-subscription-0001"
 
@@ -44,6 +44,21 @@ class GatewayTests(unittest.TestCase):
     def test_health_does_not_query_panel(self):
         self.assertEqual(200, self.request(path="/health", credential="")[0])
         self.assertEqual([], self.panel.calls)
+
+    def test_panel_uses_separate_scoped_tokens(self):
+        panel = Panel("https://panel.fillvl.ru", "user-read-token", "device-token")
+        calls = []
+        class Response(io.BytesIO):
+            pass
+        class Opener:
+            def open(self, request, timeout):
+                calls.append(request.get_header("Authorization"))
+                return Response(b'{"response":{}}')
+        panel.opener = Opener()
+        panel.call("/users/by-short-uuid/" + CREDENTIAL)
+        panel.call("/hwid/devices/42")
+        panel.call("/hwid/devices/delete", {"userId": 42, "hwid": "test"})
+        self.assertEqual(["Bearer user-read-token", "Bearer device-token", "Bearer device-token"], calls)
 
     def test_snapshot_only_exposes_device_metadata(self):
         status, data, headers = self.request()
