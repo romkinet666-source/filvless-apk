@@ -104,6 +104,10 @@ class MainViewModel(
     private var selectedGroupLoadJob: Job? = null
     private var reloadJob: Job? = null
     private var sessionTimerJob: Job? = null
+    private var connectionTimeoutJob: Job? = null
+    private var initializationJob: Job? = null
+    private val preferenceMutex = Mutex()
+    private var coldLaunchHandled = false
     private var testResultFlushJob: Job? = null
     private val pendingTestResults = linkedMapOf<String, Long>()
 
@@ -114,6 +118,7 @@ class MainViewModel(
 
     // ---------- Service events ----------
     init {
+        refreshFilvlessPreferences()
         collectServiceEvents()
         setupGroupTab()
     }
@@ -138,6 +143,7 @@ class MainViewModel(
             MainServiceEvent.StateStartFailure -> {
                 toastError(R.string.toast_services_failure)
                 updateRunningState(false)
+                _uiState.update { it.copy(connectionFailed = true) }
             }
 
             MainServiceEvent.StateStopSuccess -> updateRunningState(false)
@@ -271,6 +277,9 @@ class MainViewModel(
     // ---------- Action handler ----------
     fun onAction(action: MainAction) {
         when (action) {
+            is MainAction.SetPreference -> setFilvlessPreference(action.key, action.enabled)
+            MainAction.ForgetSubscriptions -> forgetSubscriptions()
+            is MainAction.SetLanguage, MainAction.OpenSupport, MainAction.OpenReview -> Unit // Activity-owned system actions.
             MainAction.Initialize -> initialize()
             MainAction.RefreshGroups -> setupGroupTab(forceRefresh = true)
             MainAction.TestAllServers -> testAllRealPing(true)
@@ -314,8 +323,75 @@ class MainViewModel(
     }
 
     // ---------- Initialization ----------
+    fun refreshFilvlessPreferences() {
+        viewModelScope.launch(ioDispatcher) {
+            preferenceMutex.withLock {
+                val preferences = dataSource.readFilvlessPreferences()
+                _uiState.update { it.copy(preferences = preferences, preferencesLoaded = true) }
+            }
+        }
+    }
+
+    private fun setFilvlessPreference(key: FilvlessPreference, enabled: Boolean) {
+        viewModelScope.launch(ioDispatcher) {
+            preferenceMutex.withLock {
+                if (dataSource.writeFilvlessPreference(key, enabled)) {
+                    _uiState.update { it.copy(preferences = it.preferences.withPreference(key, enabled)) }
+                } else {
+                    toastError(R.string.toast_failure)
+                }
+            }
+        }
+    }
+
+    suspend fun prepareColdLaunch(): Boolean {
+        if (coldLaunchHandled) return false
+        coldLaunchHandled = true
+        initializationJob?.join()
+        return withContext(ioDispatcher) {
+            val preferences = dataSource.readFilvlessPreferences()
+            val guid = dataSource.getSelectServer()
+            val profile = guid?.let(dataSource::decodeServerConfig)
+            val denied = profile?.let {
+                dataSource.getServerGuidList(it.subscriptionId).any { id ->
+                    dataSource.decodeServerConfig(id)?.remarks?.let(::isUnsupportedDeviceNotice) == true
+                }
+            } ?: true
+            shouldAutoConnect(preferences.autoConnect, uiState.value.isRunning, guid, denied)
+        }
+    }
+
+    fun connectionRequested() {
+        if (uiState.value.connectionPending || uiState.value.isRunning) return
+        _uiState.update { it.copy(connectionPending = true, connectionFailed = false) }
+        connectionTimeoutJob?.cancel()
+        connectionTimeoutJob = viewModelScope.launch {
+            kotlinx.coroutines.delay(30_000)
+            if (uiState.value.connectionPending) {
+                _uiState.update { it.copy(connectionPending = false, connectionFailed = true) }
+            }
+        }
+    }
+
+    fun connectionCancelled() {
+        connectionTimeoutJob?.cancel()
+        _uiState.update { it.copy(connectionPending = false) }
+    }
+
+    private fun forgetSubscriptions() {
+        if (uiState.value.isRunning || uiState.value.connectionPending || isLoading.value) return
+        launchLoading {
+            withContext(ioDispatcher) {
+                preferenceMutex.withLock { dataSource.forgetSubscriptions() }
+            }
+            refreshFilvlessPreferences()
+            setupGroupTab(forceRefresh = true).join()
+        }
+    }
+
     fun initialize() {
-        viewModelScope.launch(preloadDispatcher) {
+        if (initializationJob != null) return
+        initializationJob = viewModelScope.launch(preloadDispatcher) {
             try {
                 initialPageReady.await()
                 delay(32)
@@ -330,6 +406,7 @@ class MainViewModel(
     }
 
     fun refreshUiSettings() {
+        refreshFilvlessPreferences()
         _uiState.update {
             it.copy(
                 confirmRemove = dataSource.getConfirmRemove(),
@@ -385,6 +462,15 @@ class MainViewModel(
     }
 
     private fun updateGroupUi(groupId: String, servers: List<ServersCache>) {
+        if (uiState.value.selectedGroupId == groupId) {
+            val subscription = dataSource.getSubscriptionItem(groupId)
+            _uiState.update { state ->
+                if (state.selectedGroupId != groupId) state else state.copy(
+                    subscriptionExpiresAt = subscription?.expiresAtSeconds,
+                    subscriptionUpdatedAt = subscription?.lastUpdated ?: -1,
+                )
+            }
+        }
         val filteredServers = applyKeywordFilter(servers)
         mutableServerGroupState(groupId).value = ServerGroupUiState(
             servers = filteredServers,
@@ -919,6 +1005,9 @@ class MainViewModel(
 
     // ---------- Running state ----------
     private fun updateRunningState(running: Boolean, clearTestingText: Boolean = true) {
+        if (!running && !clearTestingText && uiState.value.connectionPending) return
+        connectionTimeoutJob?.cancel()
+        _uiState.update { it.copy(connectionPending = false, connectionFailed = false) }
         if (!running) {
             sessionTimerJob?.cancel()
             sessionTimerJob = null

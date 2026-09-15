@@ -484,6 +484,10 @@ object AngConfigManager {
             }
             LogUtil.i(AppConfig.TAG, url)
             val userAgent = it.subscription.userAgent
+            var expiresAtSeconds: Long? = null
+            val captureSubscriptionInfo: (String?) -> Unit = { header ->
+                expiresAtSeconds = com.v2ray.ang.dto.parseSubscriptionExpiry(header)
+            }
             val requestHeaders = it.subscription.requestHeaders
             val proxyUsername = SettingsManager.getSocksUsername()
             val proxyPassword = SettingsManager.getSocksPassword()
@@ -498,7 +502,8 @@ object AngConfigManager {
                         timeout = 15000,
                         httpPort = httpPort,
                         proxyUsername = proxyUsername,
-                        proxyPassword = proxyPassword
+                        proxyPassword = proxyPassword,
+                        onSubscriptionInfo = captureSubscriptionInfo,
                     )
                 )
             } catch (e: Exception) {
@@ -511,7 +516,8 @@ object AngConfigManager {
                         UrlContentRequest(
                             url = url,
                             userAgent = userAgent,
-                            requestHeaders = requestHeaders
+                            requestHeaders = requestHeaders,
+                            onSubscriptionInfo = captureSubscriptionInfo,
                         )
                     )
                 } catch (e: Exception) {
@@ -526,6 +532,7 @@ object AngConfigManager {
             val count = parseConfigViaSub(configText, it.guid, false)
             if (count > 0) {
                 it.subscription.lastUpdated = System.currentTimeMillis()
+                it.subscription.expiresAtSeconds = expiresAtSeconds
                 MmkvManager.encodeSubscription(it.guid, it.subscription)
                 LogUtil.i(AppConfig.TAG, "Subscription updated: ${it.subscription.remarks}, $count configs")
                 return SubscriptionUpdateResult(

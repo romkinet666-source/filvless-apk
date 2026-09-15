@@ -20,3 +20,6 @@ Filvless 0.1 — производная работа на основе v2rayNG.
 
 Исходники и ресурсы VPNUS не включены. Предоставленные пользователем скриншоты
 использованы как ориентир по расположению элементов и цветовой теме.
+
+## Filvless 0.2.0-preview
+Added purple settings UI, persisted preferences, application language selection, subscription expiry metadata and Telegram support links.

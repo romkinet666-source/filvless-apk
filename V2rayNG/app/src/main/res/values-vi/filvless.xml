@@ -1,5 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="fv_appearance">Appearance</string>
+    <string name="fv_language_system">System</string>
+    <string name="fv_language_ru">Русский</string>
+    <string name="fv_language_en">English</string>
+    <string name="fv_functions">Features</string>
+    <string name="fv_auto_connect">Connect on launch</string>
+    <string name="fv_auto_connect_hint">Automatically connect to your selected server</string>
+    <string name="fv_haptics">Haptic feedback</string>
+    <string name="fv_haptics_hint">Gentle feedback when tapping and switching</string>
+    <string name="fv_effects">Visual effects</string>
+    <string name="fv_effects_hint">Soft glow and connection animations</string>
+    <string name="fv_information">Information</string>
+    <string name="fv_review">Leave feedback</string>
+    <string name="fv_support">Support</string>
+    <string name="fv_active_date">Active until %1$s</string>
+    <string name="fv_expired_date">Expired on %1$s</string>
+    <string name="fv_server_count">Servers in subscription: %1$d</string>
+    <string name="fv_subscription_empty">Add a subscription to connect</string>
+    <string name="fv_version">Filvless · %1$s</string>
+    <string name="fv_remove_subscription">Remove subscriptions</string>
+    <string name="fv_remove_subscription_confirm">All subscriptions and servers will be removed from this device. Auto-connect will be disabled. Your subscription with the provider will remain active.</string>
+    <string name="fv_disconnect_before_remove">Disconnect the VPN on the home screen before removing subscriptions.</string>
+    <string name="fv_remove">Remove</string>
+    <string name="fv_connecting">Connecting…</string>
+    <string name="fv_connection_failed">Connection failed</string>
+    <string name="fv_latency">%1$d ms</string>
+    <string name="fv_close">Close</string>
+    <string name="fv_about_description">Your VPN in one app. Add a subscription, choose a server and connect.\n\nBuilt on the open-source v2rayNG and Xray projects.</string>
+    <string name="fv_manage_subscription_hint">Servers are downloaded from your subscription link. Refresh your subscriptions or add another one.</string>
     <string name="fv_timer">%1$02d:%2$02d:%3$02d</string>
     <string name="fv_denied_title">Subscription unavailable on this device</string>
     <string name="fv_denied_hint">The provider returned a notice instead of servers. Contact your VPN support to enable Filvless or add another subscription.</string>

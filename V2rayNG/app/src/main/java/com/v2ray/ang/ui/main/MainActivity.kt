@@ -10,6 +10,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.withResumed
 import com.v2ray.ang.AngApplication
 import com.v2ray.ang.AppConfig
 import com.v2ray.ang.R
@@ -21,6 +23,7 @@ import com.v2ray.ang.extension.toast
 import com.v2ray.ang.extension.toastError
 import com.v2ray.ang.extension.toastSuccess
 import com.v2ray.ang.handler.AngConfigManager
+import com.v2ray.ang.handler.AppLocaleManager
 import com.v2ray.ang.handler.MmkvManager
 import com.v2ray.ang.handler.SettingsChangeManager
 import com.v2ray.ang.handler.SettingsManager
@@ -61,6 +64,7 @@ class MainActivity : HelperBaseComponentActivity() {
     private val requestVpnPermission =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
             if (it.resultCode == RESULT_OK) startV2Ray()
+            else mainViewModel.connectionCancelled()
         }
 
     private val profileEditorLauncher =
@@ -95,6 +99,13 @@ class MainActivity : HelperBaseComponentActivity() {
         mainViewModel.onAction(MainAction.Initialize)
 
         checkAndRequestPermission(PermissionType.POST_NOTIFICATIONS) {}
+        if (savedInstanceState == null) {
+            lifecycleScope.launch {
+                if (mainViewModel.prepareColdLaunch()) {
+                    lifecycle.withResumed { requestServiceStart() }
+                }
+            }
+        }
     }
 
     @Composable
@@ -104,6 +115,8 @@ class MainActivity : HelperBaseComponentActivity() {
             mainViewModel = mainViewModel,
             onAction = { action ->
                 when (action) {
+                    is MainAction.SetLanguage -> AppLocaleManager.setApplicationLanguage(action.code)
+                    MainAction.OpenSupport, MainAction.OpenReview -> Utils.openUri(this, "https://t.me/Godfather099")
                     MainAction.ToggleService -> handleFabAction()
                     MainAction.TestCurrentServer -> handleLayoutTestClick()
                     MainAction.ImportQRcode -> importQRcode()
@@ -167,6 +180,9 @@ class MainActivity : HelperBaseComponentActivity() {
     }
 
     private fun requestServiceStart() {
+        if (mainViewModel.uiState.value.connectionPending || mainViewModel.uiState.value.isRunning) return
+        if (mainViewModel.uiState.value.selectedGuid.isNullOrBlank()) return
+        mainViewModel.connectionRequested()
         if (!SettingsManager.isVpnMode()) {
             startV2Ray()
             return
@@ -183,6 +199,7 @@ class MainActivity : HelperBaseComponentActivity() {
 
     private fun startV2Ray() {
         if (mainViewModel.uiState.value.selectedGuid.isNullOrEmpty()) {
+            mainViewModel.connectionCancelled()
             toast(R.string.title_file_chooser)
             return
         }

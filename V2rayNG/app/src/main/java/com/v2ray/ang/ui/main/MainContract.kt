@@ -17,6 +17,12 @@ sealed interface MainStatus {
  * Main UI state
  */
 data class MainUiState(
+    val preferences: FilvlessPreferences = FilvlessPreferences(),
+    val preferencesLoaded: Boolean = false,
+    val connectionPending: Boolean = false,
+    val connectionFailed: Boolean = false,
+    val subscriptionExpiresAt: Long? = null,
+    val subscriptionUpdatedAt: Long = -1,
     val groups: List<GroupMapItem> = emptyList(),
     val selectedGroupId: String = "",
     val selectedGuid: String? = null,
@@ -34,6 +40,11 @@ data class MainUiState(
  * All possible user interaction intents
  */
 sealed interface MainAction {
+    data class SetPreference(val key: FilvlessPreference, val enabled: Boolean) : MainAction
+    data class SetLanguage(val code: String) : MainAction
+    data object ForgetSubscriptions : MainAction
+    data object OpenSupport : MainAction
+    data object OpenReview : MainAction
     data object Initialize : MainAction
     data object RefreshGroups : MainAction
     data object ToggleService : MainAction

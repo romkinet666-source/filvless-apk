@@ -13,6 +13,9 @@ interface MainDataSource : Closeable {
     val mainServiceEvent: Flow<MainServiceEvent>
 
     fun getSelectedSubscriptionId(): String
+    fun readFilvlessPreferences(): FilvlessPreferences
+    fun writeFilvlessPreference(key: FilvlessPreference, enabled: Boolean): Boolean
+    fun forgetSubscriptions()
     fun setSelectedSubscriptionId(id: String)
 
     fun getSelectServer(): String?

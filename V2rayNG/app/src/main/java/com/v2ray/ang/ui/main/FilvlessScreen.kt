@@ -1,6 +1,9 @@
 package com.v2ray.ang.ui.main
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -25,6 +28,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -35,6 +41,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.v2ray.ang.R
+import com.v2ray.ang.BuildConfig
+import com.v2ray.ang.AppConfig
 
 private val Ink = Color(0xFF0B080F)
 private val Violet = Color(0xFFB59AD8)
@@ -56,44 +64,57 @@ fun FilvlessScreen(
     var settings by rememberSaveable { mutableStateOf(false) }
     var importing by rememberSaveable { mutableStateOf(false) }
     var subscriptionText by rememberSaveable { mutableStateOf("") }
+    var languagePicker by rememberSaveable { mutableStateOf(false) }
+    var subscriptionDialog by rememberSaveable { mutableStateOf(false) }
+    var aboutDialog by rememberSaveable { mutableStateOf(false) }
+    var forgetDialog by rememberSaveable { mutableStateOf(false) }
+    val view = LocalView.current
+    val feedback: () -> Unit = { if (state.preferences.haptics) view.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK) }
+    val act: (MainAction) -> Unit = { action ->
+        feedback()
+        onAction(action)
+    }
+    val glow by animateColorAsState(
+        if (state.isRunning) Color(0xFF502075) else Color(0xFF36154F),
+        animationSpec = if (state.preferences.visualEffects) tween(650) else snap(), label = "connectionGlow",
+    )
     BackHandler(settings) { settings = false }
 
     Box(Modifier.fillMaxSize().background(Ink)) {
-        Box(Modifier.fillMaxWidth().height(530.dp).background(
-            Brush.radialGradient(listOf(Color(0xFF42176B), Color(0xFF241035), Ink),
-                center = Offset(500f, 250f), radius = 1150f)))
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().safeDrawingPadding(),
-            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
-            item {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = { settings = !settings }, modifier = Modifier.size(50.dp).background(Card, CircleShape)) {
-                        Icon(painterResource(if (settings) R.drawable.ic_arrow_back_24dp else R.drawable.ic_settings_24dp),
-                            stringResource(if (settings) R.string.fv_back else R.string.title_settings), tint = Color.White)
-                    }
-                    Text(stringResource(if (settings) R.string.title_settings else R.string.fv_brand),
-                        Modifier.weight(1f).padding(horizontal = 22.dp), color = Color.White,
-                        fontSize = 24.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 2.sp)
-                    if (!settings) TextButton(onClick = { importing = true }, enabled = !loading) {
-                        Text(stringResource(R.string.fv_add), color = Violet)
-                    }
+        if (!settings && state.preferences.visualEffects) {
+            Box(Modifier.fillMaxWidth().height(530.dp).drawWithCache {
+                val brush = Brush.radialGradient(listOf(glow, Color(0xFF1C1028), Ink),
+                    center = Offset(size.width * .5f, size.height * .22f), radius = size.height * .8f)
+                onDrawBehind { drawRect(brush) }
+            })
+        }
+        Column(Modifier.fillMaxSize().safeDrawingPadding()) {
+            Box(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp).height(56.dp)) {
+                IconButton(onClick = { feedback(); settings = !settings },
+                    modifier = Modifier.align(Alignment.CenterStart).size(50.dp).background(Card, CircleShape)) {
+                    Icon(painterResource(if (settings) R.drawable.ic_arrow_back_24dp else R.drawable.ic_settings_24dp),
+                        stringResource(if (settings) R.string.fv_back else R.string.title_settings), tint = Color.White)
                 }
+                Text(stringResource(if (settings) R.string.title_settings else R.string.fv_brand),
+                    Modifier.align(Alignment.Center).then(if (settings) Modifier.background(Card, CircleShape).padding(horizontal = 18.dp, vertical = 12.dp) else Modifier),
+                    color = Color.White, fontSize = 21.sp, fontWeight = FontWeight.SemiBold,
+                    letterSpacing = if (settings) 0.sp else 2.sp)
+                if (!settings) TextButton(onClick = { feedback(); importing = true }, enabled = !loading,
+                    modifier = Modifier.align(Alignment.CenterEnd)) { Text(stringResource(R.string.fv_add), color = Violet) }
             }
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
             if (settings) {
-                item { FilvlessSetting(R.string.fv_subscription, R.string.fv_subscription_hint) { onNavigate(MainDestination.Subscriptions) } }
-                item { FilvlessSetting(R.string.fv_tunnel, R.string.fv_tunnel_hint) { onNavigate(MainDestination.Routing) } }
-                item { FilvlessSetting(R.string.fv_apps, R.string.fv_apps_hint) { onNavigate(MainDestination.PerAppProxy) } }
-                item { FilvlessSetting(R.string.fv_advanced, R.string.fv_advanced_hint) { onNavigate(MainDestination.Settings) } }
-                item { FilvlessSetting(R.string.fv_diagnostics, R.string.fv_diagnostics_hint) { onNavigate(MainDestination.Logcat) } }
                 item {
-                    Column(Modifier.fillMaxWidth().background(Card, RoundedCornerShape(26.dp)).padding(22.dp)) {
-                        Text(stringResource(R.string.fv_about), color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                        Spacer(Modifier.height(10.dp))
-                        Text(stringResource(R.string.fv_credits), color = Muted, lineHeight = 23.sp)
-                        TextButton(onClick = { onNavigate(MainDestination.About) }) { Text(stringResource(R.string.fv_licenses), color = Violet) }
-                    }
+                    FilvlessSettingsContent(state, servers.isNotEmpty() || state.groups.any { it.id.isNotBlank() && it.id != AppConfig.DEFAULT_SUBSCRIPTION_ID }, servers.size,
+                        onLanguage = { feedback(); languagePicker = true },
+                        onSubscription = { feedback(); subscriptionDialog = true },
+                        onAbout = { feedback(); aboutDialog = true },
+                        onForget = { feedback(); forgetDialog = true },
+                        onAction = act)
                 }
             } else {
                 item {
@@ -104,16 +125,22 @@ fun FilvlessScreen(
                             state.elapsedSeconds / 60 % 60, state.elapsedSeconds % 60),
                             color = Color.White, fontSize = 36.sp, letterSpacing = 5.sp)
                         Spacer(Modifier.height(18.dp))
-                        Text(stringResource(if (state.isRunning) R.string.fv_connected else R.string.fv_disconnected),
+                        Text(stringResource(when {
+                            state.connectionPending -> R.string.fv_connecting
+                            state.connectionFailed -> R.string.fv_connection_failed
+                            state.isRunning -> R.string.fv_connected
+                            else -> R.string.fv_disconnected
+                        }),
                             Modifier.background(Color(0x663D2451), CircleShape).padding(horizontal = 22.dp, vertical = 10.dp),
                             color = Color.White, fontSize = 17.sp)
                         Spacer(Modifier.height(30.dp))
                         val powerLabel = stringResource(if (state.isRunning) R.string.fv_disconnect else R.string.fv_connect)
-                        Box(Modifier.size(144.dp).background(Brush.verticalGradient(listOf(Ink, Color(0xFF381953))), CircleShape)
+                        Box(Modifier.size(144.dp).background(Brush.verticalGradient(listOf(Ink, if (state.preferences.visualEffects) Color(0xFF381953) else Ink)), CircleShape)
                             .border(2.dp, if (state.isRunning) Violet else Color(0xFFE8DEEF), CircleShape)
-                            .clickable(enabled = state.isRunning || (!loading && !providerDenied && state.selectedGuid != null), role = Role.Button) { onAction(MainAction.ToggleService) }
+                            .clickable(enabled = !state.connectionPending && (state.isRunning || (!loading && !providerDenied && state.selectedGuid != null)), role = Role.Button) { act(MainAction.ToggleService) }
                             .semantics { contentDescription = powerLabel }, contentAlignment = Alignment.Center) {
-                            Canvas(Modifier.size(68.dp)) {
+                            if (state.connectionPending) CircularProgressIndicator(Modifier.size(64.dp), color = Violet, strokeWidth = 3.dp)
+                            else Canvas(Modifier.size(68.dp)) {
                                 val stroke = 4.dp.toPx()
                                 drawArc(Color.White, -48f, 276f, false, Offset(stroke, stroke),
                                     Size(size.width - stroke * 2, size.height - stroke * 2), style = Stroke(stroke, cap = StrokeCap.Round))
@@ -129,14 +156,14 @@ fun FilvlessScreen(
                 item {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         Text(stringResource(R.string.fv_servers), Modifier.weight(1f), color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.Bold)
-                        TextButton(onClick = { onAction(MainAction.UpdateSubscriptions) }, enabled = !loading) { Text(stringResource(R.string.fv_refresh), color = Violet) }
+                        TextButton(onClick = { act(MainAction.UpdateSubscriptions) }, enabled = !loading) { Text(stringResource(R.string.fv_refresh), color = Violet) }
                     }
                 }
                 if (loading) item { LinearProgressIndicator(Modifier.fillMaxWidth(), color = Violet, trackColor = Card) }
                 if (state.groups.size > 1) item {
                     Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         state.groups.forEach { group ->
-                            FilterChip(selected = state.selectedGroupId == group.id, onClick = { onAction(MainAction.SelectGroup(group.id)) },
+                            FilterChip(selected = state.selectedGroupId == group.id, onClick = { act(MainAction.SelectGroup(group.id)) },
                                 label = { Text(group.remarks) })
                         }
                     }
@@ -147,33 +174,76 @@ fun FilvlessScreen(
                         Spacer(Modifier.height(12.dp))
                         Text(stringResource(if (providerDenied) R.string.fv_denied_hint else R.string.fv_empty_hint), color = Muted, lineHeight = 24.sp)
                         Spacer(Modifier.height(18.dp))
-                        Button(onClick = { importing = true }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF522680))) {
+                        Button(onClick = { importing = true }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF522680), contentColor = Color.White)) {
                             Text(stringResource(R.string.fv_import))
                         }
                     }
                 }
                 items(if (providerDenied) emptyList() else servers, key = { it.guid }) { server ->
                     Row(Modifier.fillMaxWidth().background(if (state.selectedGuid == server.guid) Color(0xFF2A193A) else Color.Transparent, RoundedCornerShape(20.dp))
-                        .selectable(selected = state.selectedGuid == server.guid, role = Role.RadioButton, onClick = { onAction(MainAction.SelectServer(server.guid)) })
+                        .selectable(selected = state.selectedGuid == server.guid, role = Role.RadioButton, onClick = { act(MainAction.SelectServer(server.guid)) })
                         .padding(horizontal = 14.dp, vertical = 18.dp), verticalAlignment = Alignment.CenterVertically) {
                         Box(Modifier.size(42.dp).background(Color(0xFF30203F), RoundedCornerShape(14.dp)), contentAlignment = Alignment.Center) {
-                            Canvas(Modifier.size(20.dp)) { drawCircle(Violet, style = Stroke(2.dp.toPx())); drawLine(Violet, Offset(0f, size.height / 2), Offset(size.width, size.height / 2), 2.dp.toPx()) }
+                            Text(serverFlag(server.profile.remarks), Modifier.clearAndSetSemantics {}, fontSize = 25.sp)
                         }
                         Column(Modifier.weight(1f).padding(start = 16.dp)) {
                             Text(server.profile.remarks, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Medium)
                             Text(stringResource(R.string.fv_protocol, server.profile.configType.name, server.profile.network.orEmpty().uppercase()), color = Muted, fontSize = 13.sp)
                         }
                         if (state.selectedGuid == server.guid) Text(stringResource(R.string.fv_selected), color = Violet, fontSize = 12.sp)
+                        if (server.testDelayMillis > 0) Text(stringResource(R.string.fv_latency, server.testDelayMillis),
+                            Modifier.padding(start = 8.dp), color = Violet, fontSize = 12.sp)
                     }
                 }
                 if (servers.isNotEmpty() && !providerDenied) item {
-                    TextButton(onClick = { onAction(MainAction.TestRealAllServers) }, enabled = !state.isTesting && !loading) {
+                    TextButton(onClick = { act(MainAction.TestRealAllServers) }, enabled = !state.isTesting && !loading) {
                         Text(stringResource(R.string.fv_test), color = Violet)
                     }
                 }
             }
         }
     }
+    }
+    if (languagePicker) AlertDialog(
+        onDismissRequest = { languagePicker = false }, containerColor = Card,
+        title = { Text(stringResource(R.string.title_language)) },
+        text = {
+            Column {
+                listOf("auto" to R.string.fv_language_system, "ru" to R.string.fv_language_ru, "en" to R.string.fv_language_en).forEach { (code, title) ->
+                    Row(Modifier.fillMaxWidth().selectable(state.preferences.language == code, role = Role.RadioButton) {
+                        languagePicker = false; act(MainAction.SetLanguage(code))
+                    }.padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(selected = state.preferences.language == code, onClick = null)
+                        Text(stringResource(title), Modifier.padding(start = 12.dp))
+                    }
+                }
+            }
+        }, confirmButton = {},
+        dismissButton = { TextButton(onClick = { languagePicker = false }) { Text(stringResource(R.string.fv_cancel)) } },
+    )
+    if (aboutDialog) AlertDialog(
+        onDismissRequest = { aboutDialog = false }, containerColor = Card,
+        title = { Text(stringResource(R.string.fv_about)) },
+        text = { Column { Text(stringResource(R.string.fv_about_description)); Spacer(Modifier.height(16.dp)); Text(stringResource(R.string.fv_version, BuildConfig.VERSION_NAME), color = Muted) } },
+        confirmButton = { TextButton(onClick = { aboutDialog = false; onNavigate(MainDestination.About) }) { Text(stringResource(R.string.fv_licenses)) } },
+        dismissButton = { TextButton(onClick = { aboutDialog = false }) { Text(stringResource(R.string.fv_close)) } },
+    )
+    if (subscriptionDialog) AlertDialog(
+        onDismissRequest = { subscriptionDialog = false }, containerColor = Card,
+        title = { Text(stringResource(R.string.fv_subscription)) },
+        text = { Text(stringResource(if (providerDenied) R.string.fv_denied_hint else R.string.fv_manage_subscription_hint)) },
+        confirmButton = { TextButton(onClick = { subscriptionDialog = false; importing = true }) { Text(stringResource(R.string.fv_import)) } },
+        dismissButton = { TextButton(enabled = !loading, onClick = { subscriptionDialog = false; act(MainAction.UpdateSubscriptions) }) { Text(stringResource(R.string.fv_refresh)) } },
+    )
+    if (forgetDialog) AlertDialog(
+        onDismissRequest = { forgetDialog = false }, containerColor = Card,
+        title = { Text(stringResource(R.string.fv_remove_subscription)) },
+        text = { Text(stringResource(if (state.isRunning || state.connectionPending) R.string.fv_disconnect_before_remove else R.string.fv_remove_subscription_confirm)) },
+        confirmButton = { TextButton(enabled = !state.isRunning && !state.connectionPending && !loading, onClick = {
+            forgetDialog = false; settings = false; act(MainAction.ForgetSubscriptions)
+        }) { Text(stringResource(R.string.fv_remove), color = Color(0xFFE5A2AB)) } },
+        dismissButton = { TextButton(onClick = { forgetDialog = false }) { Text(stringResource(R.string.fv_cancel)) } },
+    )
     if (importing) AlertDialog(
         onDismissRequest = { importing = false; subscriptionText = "" },
         containerColor = Card,
@@ -187,17 +257,8 @@ fun FilvlessScreen(
             }
         },
         confirmButton = { TextButton(enabled = subscriptionText.isNotBlank() && !loading, onClick = {
-            onAction(MainAction.ImportBatchConfig(subscriptionText.trim())); subscriptionText = ""; importing = false
+            act(MainAction.ImportBatchConfig(subscriptionText.trim())); subscriptionText = ""; importing = false
         }) { Text(stringResource(R.string.fv_import), color = Violet) } },
         dismissButton = { TextButton(onClick = { importing = false; subscriptionText = "" }) { Text(stringResource(R.string.fv_cancel), color = Muted) } },
     )
-}
-
-@Composable
-private fun FilvlessSetting(title: Int, hint: Int, onClick: () -> Unit) {
-    Column(Modifier.fillMaxWidth().background(Card, RoundedCornerShape(26.dp)).clickable(role = Role.Button, onClick = onClick).padding(22.dp)) {
-        Text(stringResource(title), color = Color.White, fontSize = 21.sp, fontWeight = FontWeight.SemiBold)
-        Spacer(Modifier.height(10.dp))
-        Text(stringResource(hint), color = Muted, lineHeight = 23.sp)
-    }
 }

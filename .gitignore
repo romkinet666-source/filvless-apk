@@ -1,6 +1,9 @@
 .gradle/
 .kotlin/
 .idea/
+.tools/
+.emulator/
+qa-output/
 **/build/
 **/local.properties
 V2rayNG/app/libs/

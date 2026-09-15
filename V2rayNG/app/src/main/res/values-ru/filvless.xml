@@ -1,5 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="fv_appearance">Оформление</string>
+    <string name="fv_language_system">Системный</string>
+    <string name="fv_language_ru">Русский</string>
+    <string name="fv_language_en">English</string>
+    <string name="fv_functions">Функции</string>
+    <string name="fv_auto_connect">Включать при запуске</string>
+    <string name="fv_auto_connect_hint">Автоматически подключаться к выбранному серверу</string>
+    <string name="fv_haptics">Вибрация</string>
+    <string name="fv_haptics_hint">Виброотклик на нажатия и переключения</string>
+    <string name="fv_effects">Визуальные эффекты</string>
+    <string name="fv_effects_hint">Мягкое свечение и анимация подключения</string>
+    <string name="fv_information">Информация</string>
+    <string name="fv_review">Оставить отзыв</string>
+    <string name="fv_support">Поддержка</string>
+    <string name="fv_active_date">Активна до %1$s</string>
+    <string name="fv_expired_date">Истекла %1$s</string>
+    <string name="fv_server_count">Серверов в подписке: %1$d</string>
+    <string name="fv_subscription_empty">Добавьте подписку, чтобы подключиться</string>
+    <string name="fv_version">Filvless · %1$s</string>
+    <string name="fv_remove_subscription">Удалить подписки</string>
+    <string name="fv_remove_subscription_confirm">Все подписки и серверы будут удалены с этого устройства. Автоподключение отключится. Ваша подписка у провайдера останется действующей.</string>
+    <string name="fv_disconnect_before_remove">Сначала отключите VPN на главном экране, затем удалите подписки.</string>
+    <string name="fv_remove">Удалить</string>
+    <string name="fv_connecting">Подключение…</string>
+    <string name="fv_connection_failed">Не удалось подключиться</string>
+    <string name="fv_latency">%1$d мс</string>
+    <string name="fv_close">Закрыть</string>
+    <string name="fv_about_description">Ваш VPN в одном приложении. Добавьте подписку, выберите сервер и подключитесь.\n\nСоздано на основе открытых проектов v2rayNG и Xray.</string>
+    <string name="fv_manage_subscription_hint">Серверы загружаются по вашей ссылке. Вы можете обновить текущие подписки или добавить ещё одну.</string>
     <string name="fv_timer">%1$02d:%2$02d:%3$02d</string>
     <string name="fv_denied_title">Подписка не разрешена для этого устройства</string>
     <string name="fv_denied_hint">Провайдер вернул служебное сообщение вместо серверов. Обратитесь в поддержку вашего VPN, чтобы разрешить подключение Filvless, или добавьте другую подписку.</string>

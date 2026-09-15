@@ -106,6 +106,24 @@ class MainRepository(
     override fun getSelectedSubscriptionId(): String =
         MmkvManager.decodeSettingsString(AppConfig.CACHE_SUBSCRIPTION_ID, "").orEmpty()
 
+    override fun readFilvlessPreferences() = FilvlessPreferences(
+        autoConnect = MmkvManager.decodeSettingsBool(FilvlessPreference.AUTO_CONNECT.storageKey, false),
+        haptics = MmkvManager.decodeSettingsBool(FilvlessPreference.HAPTICS.storageKey, true),
+        visualEffects = MmkvManager.decodeSettingsBool(FilvlessPreference.VISUAL_EFFECTS.storageKey, true),
+        language = MmkvManager.decodeSettingsString(AppConfig.PREF_LANGUAGE, "auto") ?: "auto",
+    )
+
+    override fun writeFilvlessPreference(key: FilvlessPreference, enabled: Boolean): Boolean =
+        MmkvManager.encodeSettings(key.storageKey, enabled)
+
+    override fun forgetSubscriptions() {
+        MmkvManager.removeAllServer()
+        MmkvManager.decodeSubsList().toList().forEach { MmkvManager.removeSubscription(it) }
+        MmkvManager.setSelectServer("")
+        MmkvManager.encodeSettings(AppConfig.CACHE_SUBSCRIPTION_ID, "")
+        MmkvManager.encodeSettings(FilvlessPreference.AUTO_CONNECT.storageKey, false)
+    }
+
     override fun setSelectedSubscriptionId(id: String) {
         MmkvManager.encodeSettings(AppConfig.CACHE_SUBSCRIPTION_ID, id)
     }

@@ -193,6 +193,7 @@ object HttpUtil {
                     }
 
                     response.isSuccessful -> {
+                        request.onSubscriptionInfo?.invoke(response.header("Subscription-Userinfo"))
                         return response.body?.string() ?: ""
                     }
 
