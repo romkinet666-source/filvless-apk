@@ -50,7 +50,7 @@ class RealPingWorkerService(
 ) {
     private val job = SupervisorJob()
     private val concurrency = SettingsManager.getRealPingConcurrency()
-    private val dispatcher = Executors.newFixedThreadPool(if (onlyTcp) concurrency * 2 else concurrency).asCoroutineDispatcher()
+    private val dispatcher = Executors.newFixedThreadPool(if (onlyTcp) 16 else concurrency).asCoroutineDispatcher()
     private val scope = CoroutineScope(job + dispatcher + CoroutineName("RealPingBatchWorker"))
 
     private val runningCount = AtomicInteger(0)
@@ -136,6 +136,10 @@ class RealPingWorkerService(
         val retFailure = -1L
 
         val config = MmkvManager.decodeServerConfig(guid) ?: return retFailure
+        if (config.configType == EConfigType.CUSTOM) {
+            val target = quickPingTarget(MmkvManager.decodeServerRaw(guid)) ?: return retFailure
+            return SpeedtestManager.socketConnectTime(target.first, target.second, 1000)
+        }
         if (!config.configType.isComplexType()
             && config.configType != EConfigType.HYSTERIA2
             && config.configType != EConfigType.WIREGUARD

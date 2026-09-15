@@ -5,6 +5,11 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.ui.draw.rotate
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -128,8 +133,8 @@ fun FilvlessScreen(
                 }
                 Text(stringResource(if (settings) R.string.title_settings else R.string.fv_brand),
                     Modifier.align(Alignment.Center).then(if (settings) Modifier.background(Card, CircleShape).padding(horizontal = 18.dp, vertical = 12.dp) else Modifier),
-                    color = Color.White, fontSize = 21.sp, fontWeight = FontWeight.SemiBold,
-                    letterSpacing = if (settings) 0.sp else 2.sp)
+                    color = Color.White, fontSize = if (settings) 21.sp else 18.sp, fontWeight = FontWeight.SemiBold,
+                    letterSpacing = if (settings) 0.sp else 1.sp)
                 if (!settings) TextButton(onClick = { openImport() }, enabled = !loading,
                     modifier = Modifier.align(Alignment.CenterEnd)) { Text(stringResource(R.string.fv_add), color = Violet) }
             }
@@ -146,7 +151,7 @@ fun FilvlessScreen(
                     Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(stringResource(R.string.fv_timer, state.elapsedSeconds / 3600,
                             state.elapsedSeconds / 60 % 60, state.elapsedSeconds % 60),
-                            color = Color.White, fontSize = 27.sp, letterSpacing = 3.sp)
+                            color = Color.White, fontSize = 23.sp, letterSpacing = 2.sp)
                         Spacer(Modifier.height(6.dp))
                         Text(stringResource(when {
                             state.connectionPending -> R.string.fv_connecting
@@ -154,7 +159,9 @@ fun FilvlessScreen(
                             state.isRunning -> R.string.fv_connected
                             else -> R.string.fv_disconnected
                         }),
-                            Modifier.background(Color(0x663D2451), CircleShape).padding(horizontal = 18.dp, vertical = 6.dp),
+                            Modifier.background(Brush.horizontalGradient(listOf(Color(0x993D2451), Color(0x6626193B))), CircleShape)
+                                .border(1.dp, if (state.isRunning) Color(0xFFB986EA) else Color(0xFF655174), CircleShape)
+                                .padding(horizontal = 20.dp, vertical = 7.dp),
                             color = Color.White, fontSize = 14.sp)
                         Spacer(Modifier.height(12.dp))
                         val powerLabel = stringResource(if (state.isRunning) R.string.fv_disconnect else R.string.fv_connect)
@@ -203,12 +210,15 @@ fun FilvlessScreen(
                 item {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         Text(stringResource(R.string.fv_servers), Modifier.weight(1f), color = Color.White, fontSize = 21.sp, fontWeight = FontWeight.SemiBold)
-                        IconButton(onClick = { act(MainAction.TestRealAllServers) },
+                        IconButton(onClick = { act(MainAction.TestAllServers) },
                             enabled = servers.isNotEmpty() && !providerDenied && !state.isTesting && !loading) {
-                            if (state.isTesting) CircularProgressIndicator(Modifier.size(20.dp).semantics {
-                                contentDescription = context.getString(R.string.fv_test)
-                            }, color = Violet, strokeWidth = 2.dp)
-                            else Icon(painterResource(R.drawable.fv_ping), stringResource(R.string.fv_test),
+                            if (state.isTesting) {
+                                val transition = rememberInfiniteTransition(label = "pingCheck")
+                                val angle by transition.animateFloat(0f, 360f,
+                                    infiniteRepeatable(tween(900, easing = LinearEasing)), label = "pingRotation")
+                                Icon(painterResource(R.drawable.fv_ping), stringResource(R.string.fv_test),
+                                    Modifier.size(24.dp).rotate(angle), tint = Violet)
+                            } else Icon(painterResource(R.drawable.fv_ping), stringResource(R.string.fv_test),
                                 tint = if (servers.isNotEmpty() && !loading) Violet else Muted.copy(alpha = .4f))
                         }
                         TextButton(onClick = { act(MainAction.UpdateSubscriptions) }, enabled = !loading) { Text(stringResource(R.string.fv_refresh), color = Violet) }

@@ -64,7 +64,7 @@
     <string name="fv_cancel">Отмена</string>
     <string name="fv_protocol">%1$s | %2$s</string>
     <string name="fv_selected">Выбран</string>
-    <string name="fv_test">Проверить доступность серверов</string>
+    <string name="fv_test">Быстрая проверка TCP</string>
     <string name="fv_auto_update">Автообновление подписок</string>
     <string name="fv_auto_update_hint">Каждые 6 часов при наличии интернета</string>
     <string name="fv_routing">Маршрутизация</string>
