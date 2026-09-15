@@ -215,14 +215,21 @@ fun FilvlessScreen(
                             Text(serverFlag(server.profile.remarks), Modifier.clearAndSetSemantics {}, fontSize = 21.sp)
                         }
                         Column(Modifier.weight(1f).padding(start = 10.dp)) {
-                            Text(server.profile.remarks, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Medium,
-                                maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                            Text(serverDisplayName(server.profile.remarks), color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Medium,
+                                maxLines = 1, softWrap = false, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                             Text(if (server.profile.configType == com.v2ray.ang.enums.EConfigType.CUSTOM) "VPN" else
-                                listOf(server.profile.configType.name, server.profile.network.orEmpty().uppercase()).filter { it.isNotBlank() }.joinToString(" | "), color = Muted, fontSize = 12.sp)
+                                listOf(server.profile.configType.name, server.profile.network.orEmpty().uppercase()).filter { it.isNotBlank() }.joinToString(" | "), color = Muted, fontSize = 12.sp,
+                                maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                         }
-                        if (state.selectedGuid == server.guid) Text(stringResource(R.string.fv_selected), color = Violet, fontSize = 12.sp)
-                        if (server.testDelayMillis > 0) Text(stringResource(R.string.fv_latency, server.testDelayMillis),
-                            Modifier.padding(start = 8.dp), color = Violet, fontSize = 12.sp)
+                        Column(Modifier.padding(start = 8.dp).width(60.dp), horizontalAlignment = Alignment.End) {
+                            if (state.selectedGuid == server.guid) {
+                                val selectedLabel = stringResource(R.string.fv_selected)
+                                Text("✓", Modifier.clearAndSetSemantics { contentDescription = selectedLabel }, color = Violet, fontSize = 16.sp)
+                            }
+                            if (server.testDelayMillis > 0) Text(stringResource(R.string.fv_latency, server.testDelayMillis),
+                                color = Violet, fontSize = 12.sp, maxLines = 1, softWrap = false,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                        }
                     }
                 }
             }

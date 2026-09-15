@@ -21,3 +21,7 @@ private val countryFlags = listOf(
 internal fun serverFlag(remarks: String): String = flagPattern.find(remarks)?.value
     ?: countryFlags.firstOrNull { (names, _) -> names.any { remarks.contains(it, ignoreCase = true) } }?.second
     ?: "🌐"
+
+/** The country flag already has its own leading icon in the server row. */
+internal fun serverDisplayName(remarks: String): String =
+    remarks.replace(flagPattern, "").trim().ifEmpty { remarks }
