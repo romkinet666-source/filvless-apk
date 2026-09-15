@@ -37,12 +37,10 @@ internal fun FilvlessSettingsContent(
     onSubscription: () -> Unit,
     onAbout: () -> Unit,
     onForget: () -> Unit,
-    onRouting: () -> Unit,
-    onApps: () -> Unit,
     onDevices: () -> Unit,
     onAction: (MainAction) -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         val expired = state.subscriptionExpiresAt?.let { it * 1000 < System.currentTimeMillis() } == true
         val subscriptionLabel = when {
             state.subscriptionExpiresAt != null -> stringResource(
@@ -53,15 +51,16 @@ internal fun FilvlessSettingsContent(
             else -> stringResource(R.string.fv_subscription_empty)
         }
         val banner = if (state.preferences.visualEffects) Modifier.background(
-            Brush.horizontalGradient(listOf(Color(0xFF361750), FilvlessCard, Color(0xFF2C143F))), RoundedCornerShape(28.dp),
-        ) else Modifier.background(FilvlessCard, RoundedCornerShape(28.dp))
-        Column(Modifier.fillMaxWidth().then(banner).clickable(role = Role.Button, onClick = onSubscription).padding(23.dp)) {
-            Text(stringResource(R.string.fv_subscription), color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.height(12.dp))
-            Text(subscriptionLabel, color = FilvlessMuted, fontSize = 16.sp, lineHeight = 24.sp)
+            Brush.horizontalGradient(listOf(Color(0xFF361750), FilvlessCard, Color(0xFF2C143F))), RoundedCornerShape(18.dp),
+        ) else Modifier.background(FilvlessCard, RoundedCornerShape(18.dp))
+        Column(Modifier.fillMaxWidth().then(banner).clickable(role = Role.Button, onClick = onSubscription).padding(16.dp)) {
+            Text(stringResource(R.string.fv_subscription), color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(6.dp))
+            Text(subscriptionLabel, color = FilvlessMuted, fontSize = 13.sp, lineHeight = 18.sp)
+            Text(stringResource(R.string.fv_buy_subscription), Modifier.padding(top = 5.dp), color = FilvlessAccent, fontSize = 12.sp)
         }
-        SettingsGroup(R.string.fv_devices) {
-            SettingsLink(R.drawable.fv_phone, R.string.fv_devices_manage, onClick = onDevices)
+        Column(Modifier.fillMaxWidth().background(FilvlessCard, RoundedCornerShape(18.dp)).padding(horizontal = 14.dp, vertical = 2.dp)) {
+            SettingsLink(R.drawable.fv_phone, R.string.fv_devices, onClick = onDevices)
         }
         SettingsGroup(R.string.fv_appearance) {
             val language = when (state.preferences.language) {
@@ -70,10 +69,6 @@ internal fun FilvlessSettingsContent(
                 else -> stringResource(R.string.fv_language_system)
             }
             SettingsLink(R.drawable.ic_translate_24dp, R.string.title_language, language, onLanguage)
-        }
-        SettingsGroup(R.string.fv_routing) {
-            SettingsLink(R.drawable.fv_ping, R.string.fv_routing_sites, onClick = onRouting)
-            SettingsLink(R.drawable.fv_phone, R.string.fv_routing_apps, onClick = onApps)
         }
         SettingsGroup(R.string.fv_functions) {
             SettingsToggle(R.drawable.fv_ping, R.string.fv_auto_update, R.string.fv_auto_update_hint,
@@ -94,8 +89,8 @@ internal fun FilvlessSettingsContent(
             SettingsLink(R.drawable.fv_headphones, R.string.fv_support, onClick = { onAction(MainAction.OpenSupport) })
         }
         if (hasProfiles) {
-            TextButton(onClick = onForget, modifier = Modifier.fillMaxWidth().background(Color(0xFF29181F), RoundedCornerShape(24.dp))) {
-                Text(stringResource(R.string.fv_remove_subscription), Modifier.padding(12.dp), color = Color(0xFFE5A2AB), fontSize = 17.sp)
+            TextButton(onClick = onForget, modifier = Modifier.fillMaxWidth().background(Color(0xFF29181F), RoundedCornerShape(18.dp))) {
+                Text(stringResource(R.string.fv_remove_subscription), Modifier.padding(4.dp), color = Color(0xFFE5A2AB), fontSize = 15.sp)
             }
         }
         Text(stringResource(R.string.fv_version, BuildConfig.VERSION_NAME), Modifier.align(Alignment.CenterHorizontally).padding(bottom = 12.dp),
@@ -105,26 +100,26 @@ internal fun FilvlessSettingsContent(
 
 @Composable
 private fun SettingsGroup(title: Int, content: @Composable ColumnScope.() -> Unit) {
-    Column(Modifier.fillMaxWidth().background(FilvlessCard, RoundedCornerShape(28.dp)).padding(horizontal = 20.dp, vertical = 22.dp)) {
-        Text(stringResource(title), color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(14.dp))
+    Column(Modifier.fillMaxWidth().background(FilvlessCard, RoundedCornerShape(18.dp)).padding(horizontal = 14.dp, vertical = 12.dp)) {
+        Text(stringResource(title), color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(4.dp))
         content()
     }
 }
 
 @Composable
 private fun SettingsGlyph(icon: Int) {
-    Box(Modifier.size(44.dp).background(Color(0xFF28212F), CircleShape), contentAlignment = Alignment.Center) {
-        Icon(painterResource(icon), contentDescription = null, tint = FilvlessAccent, modifier = Modifier.size(24.dp))
+    Box(Modifier.size(32.dp).background(Color(0xFF28212F), CircleShape), contentAlignment = Alignment.Center) {
+        Icon(painterResource(icon), contentDescription = null, tint = FilvlessAccent, modifier = Modifier.size(19.dp))
     }
 }
 
 @Composable
 private fun SettingsLink(icon: Int, title: Int, trailing: String? = null, onClick: () -> Unit) {
-    Row(Modifier.fillMaxWidth().clickable(role = Role.Button, onClick = onClick).padding(vertical = 12.dp)
+    Row(Modifier.fillMaxWidth().clickable(role = Role.Button, onClick = onClick).padding(vertical = 8.dp)
         .semantics(mergeDescendants = true) {}, verticalAlignment = Alignment.CenterVertically) {
         SettingsGlyph(icon)
-        Text(stringResource(title), Modifier.weight(1f).padding(start = 14.dp), color = Color.White, fontSize = 17.sp)
+        Text(stringResource(title), Modifier.weight(1f).padding(start = 10.dp), color = Color.White, fontSize = 15.sp)
         if (trailing != null) {
             Text(trailing, Modifier.background(Color(0xFF29232F), CircleShape).padding(horizontal = 9.dp, vertical = 5.dp),
                 color = FilvlessMuted, fontSize = 13.sp)
@@ -137,12 +132,12 @@ private fun SettingsLink(icon: Int, title: Int, trailing: String? = null, onClic
 @Composable
 private fun SettingsToggle(icon: Int, title: Int, hint: Int, checked: Boolean, enabled: Boolean, onChange: (Boolean) -> Unit) {
     Row(Modifier.fillMaxWidth().toggleable(value = checked, enabled = enabled, role = Role.Switch, onValueChange = onChange)
-        .padding(vertical = 12.dp).semantics(mergeDescendants = true) {}, verticalAlignment = Alignment.CenterVertically) {
+        .padding(vertical = 8.dp).semantics(mergeDescendants = true) {}, verticalAlignment = Alignment.CenterVertically) {
         SettingsGlyph(icon)
-        Column(Modifier.weight(1f).padding(start = 14.dp, end = 10.dp)) {
-            Text(stringResource(title), color = Color.White, fontSize = 17.sp, lineHeight = 23.sp)
-            Spacer(Modifier.height(5.dp))
-            Text(stringResource(hint), color = FilvlessMuted, fontSize = 14.sp, lineHeight = 21.sp)
+        Column(Modifier.weight(1f).padding(start = 10.dp, end = 8.dp)) {
+            Text(stringResource(title), color = Color.White, fontSize = 15.sp, lineHeight = 20.sp)
+            Spacer(Modifier.height(2.dp))
+            Text(stringResource(hint), color = FilvlessMuted, fontSize = 12.sp, lineHeight = 16.sp)
         }
         Switch(checked = checked, onCheckedChange = null, enabled = enabled,
             colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = Color(0xFF6A3D91),

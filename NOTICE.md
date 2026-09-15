@@ -38,3 +38,5 @@ Device-management Android UI and a separate Python WSGI gateway for Remnawave v3
 Gateway authenticates subscription bearer credentials, checks device ownership,
 and keeps panel API credentials server-side. Added gateway security tests,
 Android parsing tests and Compose confirmation/error-state tests.
+
+Изменения 0.6.1: компактные настройки и устройства, усиленный виброотклик, ссылка покупки подписки на @filvless_bot; раздел маршрутизации временно скрыт.

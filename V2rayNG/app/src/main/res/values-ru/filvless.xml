@@ -78,4 +78,5 @@
     <string name="fv_check_update">Обновление приложения</string>
     <string name="fv_update_available">Доступна Filvless %1$s</string>
     <string name="fv_download_update">Скачать</string>
+    <string name="fv_buy_subscription">Купить или продлить</string>
 </resources>

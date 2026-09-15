@@ -34,12 +34,12 @@ class DevicesScreenTest {
         compose.onNodeWithText(text(R.string.fv_devices_current)).assertIsDisplayed()
         compose.onNodeWithText("Samsung Galaxy S24").assertIsDisplayed()
         screenshot("devices-list-test.png")
-        compose.onAllNodesWithText(text(R.string.fv_devices_remove))[0].performClick()
+        compose.onAllNodesWithContentDescription(text(R.string.fv_devices_remove))[0].performClick()
         compose.onNodeWithText(text(R.string.fv_devices_confirm_title)).assertIsDisplayed()
         assertNull(removed)
         compose.onNodeWithText(text(R.string.fv_cancel)).performClick()
         assertNull(removed)
-        compose.onAllNodesWithText(text(R.string.fv_devices_remove))[0].performClick()
+        compose.onAllNodesWithContentDescription(text(R.string.fv_devices_remove))[0].performClick()
         compose.onAllNodesWithText(text(R.string.fv_devices_remove)).onLast().performClick()
         compose.runOnIdle { assertEquals(current.id, removed) }
     }
@@ -50,7 +50,7 @@ class DevicesScreenTest {
             subscriptions = listOf(DeviceSubscription("sample", "Filvless")), selectedId = "sample",
             loading = false, error = "panel_permissions"), {}, { retried = true }, {}, {}) } }
         compose.onNodeWithText(text(R.string.fv_devices_permissions)).assertIsDisplayed()
-        compose.onNodeWithText(text(R.string.fv_devices_remove)).assertDoesNotExist()
+        compose.onNodeWithContentDescription(text(R.string.fv_devices_remove)).assertDoesNotExist()
         screenshot("devices-error-test.png")
         compose.onNodeWithText(text(R.string.fv_devices_retry)).performClick()
         compose.runOnIdle { assertTrue(retried) }

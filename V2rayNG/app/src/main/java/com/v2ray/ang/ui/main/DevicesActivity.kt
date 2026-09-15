@@ -46,23 +46,24 @@ class DevicesActivity : BaseComponentActivity() {
 internal fun DevicesContent(state: DevicesState, onBack: () -> Unit, onRefresh: () -> Unit,
     onSelect: (String) -> Unit, onDelete: (String) -> Unit) {
     var picker by remember { mutableStateOf(false) }
+    var information by remember { mutableStateOf(false) }
     var deleting by remember { mutableStateOf<FilvlessDevice?>(null) }
     Column(Modifier.fillMaxSize().background(Color(0xFF0B080F)).safeDrawingPadding()) {
-        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack, modifier = Modifier.background(FilvlessCard, CircleShape)) {
                 Icon(painterResource(R.drawable.ic_arrow_back_24dp), stringResource(R.string.fv_back), tint = Color.White)
             }
-            Text(stringResource(R.string.fv_devices), Modifier.weight(1f).padding(start = 12.dp),
-                color = Color.White, fontSize = 21.sp, fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.fv_devices), Modifier.weight(1f).padding(start = 8.dp),
+                color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+            IconButton(onClick = { information = true }) {
+                Icon(painterResource(R.drawable.ic_about_24dp), stringResource(R.string.fv_about), tint = FilvlessAccent, modifier = Modifier.size(20.dp))
+            }
             TextButton(onClick = onRefresh, enabled = !state.loading && state.selectedId != null) {
                 Text(stringResource(R.string.fv_refresh), color = FilvlessAccent)
             }
         }
         if (state.loading) LinearProgressIndicator(Modifier.fillMaxWidth(), color = FilvlessAccent)
-        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            item {
-                Text(stringResource(R.string.fv_devices_hint), color = FilvlessMuted, fontSize = 14.sp, lineHeight = 21.sp)
-            }
+        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             if (state.subscriptions.size > 1) item {
                 Box {
                     OutlinedButton(onClick = { picker = true }, enabled = !state.loading) {
@@ -93,34 +94,36 @@ internal fun DevicesContent(state: DevicesState, onBack: () -> Unit, onRefresh: 
                 item {
                     Text(if (snapshot.limit != null) stringResource(R.string.fv_devices_count_limit, snapshot.devices.size, snapshot.limit)
                         else stringResource(R.string.fv_devices_count, snapshot.devices.size),
-                        color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.SemiBold)
+                        color = FilvlessMuted, fontSize = 14.sp, fontWeight = FontWeight.Medium)
                 }
                 if (snapshot.devices.isEmpty()) item { DeviceMessage(stringResource(R.string.fv_devices_empty)) }
                 items(snapshot.devices, key = { it.id }) { device ->
-                    Column(Modifier.fillMaxWidth().background(FilvlessCard, RoundedCornerShape(24.dp)).padding(18.dp)) {
+                    Column(Modifier.fillMaxWidth().background(FilvlessCard, RoundedCornerShape(16.dp)).padding(horizontal = 12.dp, vertical = 10.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(painterResource(R.drawable.fv_phone), null, tint = FilvlessAccent, modifier = Modifier.size(28.dp))
-                            Column(Modifier.weight(1f).padding(start = 12.dp)) {
+                            Icon(painterResource(R.drawable.fv_phone), null, tint = FilvlessAccent, modifier = Modifier.size(22.dp))
+                            Column(Modifier.weight(1f).padding(start = 10.dp)) {
                                 Text(device.model.ifBlank { stringResource(R.string.fv_devices_unknown) }, color = Color.White,
-                                    fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+                                    fontSize = 15.sp, lineHeight = 19.sp, fontWeight = FontWeight.SemiBold)
                                 Text(listOf(device.platform, device.osVersion).filter { it.isNotBlank() }.joinToString(" "),
-                                    color = FilvlessMuted, fontSize = 13.sp)
+                                    color = FilvlessMuted, fontSize = 12.sp)
+                                if (device.isCurrent) Text(stringResource(R.string.fv_devices_current), color = FilvlessAccent, fontSize = 11.sp)
+                            }
+                            IconButton(onClick = { deleting = device }, enabled = !state.loading && state.error == null) {
+                                Icon(painterResource(R.drawable.ic_delete_24dp), stringResource(R.string.fv_devices_remove),
+                                    tint = Color(0xFFE5A2AB), modifier = Modifier.size(20.dp))
                             }
                         }
-                        if (device.isCurrent) Text(stringResource(R.string.fv_devices_current), Modifier.padding(top = 10.dp),
-                            color = FilvlessAccent, fontSize = 13.sp)
                         deviceDate(device.updatedAt)?.let { date ->
-                            Text(stringResource(R.string.fv_devices_last_request, date), Modifier.padding(top = 8.dp), color = FilvlessMuted, fontSize = 12.sp)
-                        }
-                        TextButton(onClick = { deleting = device }, enabled = !state.loading && state.error == null,
-                            modifier = Modifier.align(Alignment.End)) {
-                            Text(stringResource(R.string.fv_devices_remove), color = Color(0xFFE5A2AB))
+                            Text(stringResource(R.string.fv_devices_last_request, date), Modifier.padding(start = 32.dp, top = 4.dp), color = FilvlessMuted, fontSize = 11.sp, lineHeight = 15.sp)
                         }
                     }
                 }
             }
         }
     }
+    if (information) AlertDialog(onDismissRequest = { information = false }, containerColor = FilvlessCard,
+        title = { Text(stringResource(R.string.fv_devices)) }, text = { Text(stringResource(R.string.fv_devices_hint)) },
+        confirmButton = { TextButton(onClick = { information = false }) { Text(stringResource(android.R.string.ok)) } })
     deleting?.let { device -> AlertDialog(onDismissRequest = { deleting = null }, containerColor = FilvlessCard,
         title = { Text(stringResource(R.string.fv_devices_confirm_title)) },
         text = { Text(stringResource(R.string.fv_devices_confirm, device.model.ifBlank { stringResource(R.string.fv_devices_unknown) })) },
@@ -129,12 +132,12 @@ internal fun DevicesContent(state: DevicesState, onBack: () -> Unit, onRefresh: 
 }
 
 @Composable private fun DeviceMessage(text: String) {
-    Text(text, Modifier.fillMaxWidth().background(FilvlessCard, RoundedCornerShape(20.dp)).padding(18.dp),
-        color = FilvlessMuted, fontSize = 15.sp, lineHeight = 23.sp)
+    Text(text, Modifier.fillMaxWidth().background(FilvlessCard, RoundedCornerShape(16.dp)).padding(14.dp),
+        color = FilvlessMuted, fontSize = 13.sp, lineHeight = 19.sp)
 }
 
 private fun deviceDate(value: String): String? = runCatching {
     val parser = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).apply { timeZone = TimeZone.getTimeZone("UTC") }
     val date = parser.parse(value.take(19)) ?: return null
-    DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(date)
+    DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(date)
 }.getOrNull()

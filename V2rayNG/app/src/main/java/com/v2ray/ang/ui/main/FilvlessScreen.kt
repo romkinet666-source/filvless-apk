@@ -120,7 +120,7 @@ fun FilvlessScreen(
             })
         }
         Column(Modifier.fillMaxSize().safeDrawingPadding()) {
-            Box(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp).height(56.dp)) {
+            Box(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = if (settings) 6.dp else 16.dp).height(if (settings) 48.dp else 56.dp)) {
                 IconButton(onClick = { feedback(); settings = !settings },
                     modifier = Modifier.align(Alignment.CenterStart).size(50.dp).background(Card, CircleShape)) {
                     Icon(painterResource(if (settings) R.drawable.ic_arrow_back_24dp else R.drawable.ic_settings_24dp),
@@ -193,11 +193,9 @@ fun FilvlessScreen(
                 item {
                     FilvlessSettingsContent(state, servers.isNotEmpty() || state.groups.any { it.id.isNotBlank() && it.id != AppConfig.DEFAULT_SUBSCRIPTION_ID }, servers.size,
                         onLanguage = { feedback(); languagePicker = true },
-                        onSubscription = { feedback(); subscriptionDialog = true },
+                        onSubscription = { feedback(); com.v2ray.ang.util.Utils.openUri(context, "https://t.me/filvless_bot") },
                         onAbout = { feedback(); aboutDialog = true },
                         onForget = { feedback(); forgetDialog = true },
-                        onRouting = { feedback(); routingDialog = true },
-                        onApps = { feedback(); onNavigate(MainDestination.PerAppProxy) },
                         onDevices = { feedback(); onNavigate(MainDestination.Devices) },
                         onAction = act)
                 }
