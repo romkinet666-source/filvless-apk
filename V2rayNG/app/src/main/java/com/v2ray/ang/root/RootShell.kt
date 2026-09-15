@@ -36,7 +36,7 @@ object RootShell {
                 .redirectErrorStream(true)
                 .start()
             val output = process.inputStream.bufferedReader().use { it.readText() }
-            val finished = process.waitFor(timeoutSeconds, TimeUnit.SECONDS)
+            val finished = process.waitForCompat(timeoutSeconds, TimeUnit.SECONDS)
             if (!finished) {
                 process.destroy()
                 LogUtil.e(AppConfig.TAG, "RootShell: timed out: $command")

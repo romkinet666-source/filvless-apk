@@ -79,4 +79,5 @@
     <string name="fv_update_available">Filvless %1$s is available</string>
     <string name="fv_download_update">Download</string>
     <string name="fv_buy_subscription">Buy or renew</string>
+    <string name="fv_update_prompt">A new version is available. Download the update and install it over your current app.</string>
 </resources>

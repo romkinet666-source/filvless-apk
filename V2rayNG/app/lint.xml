@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<lint>
+    <!-- localeFilters ships only English and Russian. Keep missing translations
+         for either supported language as errors; legacy excluded locales do not apply. -->
+    <issue id="MissingTranslation">
+        <ignore regexp="not translated in (?!.*&quot;(?:en|ru)&quot;).*" />
+    </issue>
+</lint>

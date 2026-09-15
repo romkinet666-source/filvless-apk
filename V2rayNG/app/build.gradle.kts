@@ -14,8 +14,8 @@ android {
         resValue("string", "filvless_package_id", "ru.filvless.vpn")
         minSdk = 24
         targetSdk = 37
-        versionCode = 9
-        versionName = "0.6.2-preview"
+        versionCode = 10
+        versionName = "0.6.3-preview"
 
         // One installer containing every supported native architecture.
         splits.abi.isEnable = false
@@ -117,17 +117,7 @@ android {
 
     androidResources {
         generateLocaleConfig = true
-        localeFilters += listOf(
-            "en",
-            "zh-rCN",
-            "zh-rTW",
-            "vi",
-            "ru",
-            "fa",
-            "ar",
-            "bn",
-            "bqi-rIR"
-        )
+        localeFilters += listOf("en", "ru")
     }
 
     packaging {

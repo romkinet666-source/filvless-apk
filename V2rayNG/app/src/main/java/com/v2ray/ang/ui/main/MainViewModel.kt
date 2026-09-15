@@ -423,8 +423,15 @@ class MainViewModel(
         }
     }
 
+    private var lastAutomaticUpdateCheck: Long? = null
+
+    fun checkAppUpdateOnResume() = checkAppUpdate(false)
+
     private fun checkAppUpdate(manual: Boolean) {
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (!manual && lastAutomaticUpdateCheck?.let { now - it < 30_000L } == true) return
         if (uiState.value.checkingAppUpdate) return
+        lastAutomaticUpdateCheck = now
         _uiState.update { it.copy(checkingAppUpdate = true) }
         viewModelScope.launch {
             try {

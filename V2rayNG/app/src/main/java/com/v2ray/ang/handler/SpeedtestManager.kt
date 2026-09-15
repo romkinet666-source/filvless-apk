@@ -27,13 +27,13 @@ object SpeedtestManager {
      */
     fun socketConnectTime(url: String, port: Int, timeoutMs: Int = 1500): Long {
         var socket: Socket? = null
-        val start = System.currentTimeMillis()
+        val start = android.os.SystemClock.elapsedRealtime()
 
         try {
             socket = Socket()
             socket.connect(InetSocketAddress(url, port), timeoutMs)
 
-            return System.currentTimeMillis() - start
+            return (android.os.SystemClock.elapsedRealtime() - start).coerceAtLeast(1L)
         } catch (e: UnknownHostException) {
             LogUtil.e(AppConfig.TAG, "Unknown host: $url", e)
         } catch (e: IOException) {

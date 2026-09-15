@@ -71,13 +71,10 @@ fun FilvlessScreen(
     val servers = allServers.filter { it.profile.subscriptionId !in deniedGroups }
     val providerDenied = deniedGroups.isNotEmpty() && servers.isEmpty()
     val context = LocalContext.current
-    var routingDialog by rememberSaveable { mutableStateOf(false) }
-    var observedRoutingSave by rememberSaveable { mutableIntStateOf(state.routingSaved) }
     var settings by rememberSaveable { mutableStateOf(false) }
     var importing by rememberSaveable { mutableStateOf(false) }
     var subscriptionText by rememberSaveable { mutableStateOf("") }
     var languagePicker by rememberSaveable { mutableStateOf(false) }
-    var subscriptionDialog by rememberSaveable { mutableStateOf(false) }
     var aboutDialog by rememberSaveable { mutableStateOf(false) }
     var forgetDialog by rememberSaveable { mutableStateOf(false) }
     val view = LocalView.current
@@ -107,14 +104,21 @@ fun FilvlessScreen(
         if (state.preferences.visualEffects && (state.isRunning || state.connectionPending)) 1f else 0f,
         animationSpec = if (state.preferences.visualEffects) tween(800) else snap(), label = "connectionEmphasis",
     )
-    LaunchedEffect(state.routingSaved) {
-        if (state.routingSaved > observedRoutingSave && routingDialog) {
-            routingDialog = false
-            if (state.isRunning) onAction(MainAction.RestartService)
-        }
-        observedRoutingSave = state.routingSaved
-    }
     BackHandler(settings) { settings = false }
+    var dismissedUpdateVersion by rememberSaveable { mutableStateOf<String?>(null) }
+    state.appUpdate?.takeIf { it.latestVersion != dismissedUpdateVersion }?.let { update ->
+        AlertDialog(onDismissRequest = { dismissedUpdateVersion = update.latestVersion },
+            containerColor = Card,
+            title = { Text(stringResource(R.string.fv_update_available, update.latestVersion.orEmpty())) },
+            text = { Text(stringResource(R.string.fv_update_prompt)) },
+            confirmButton = { TextButton(onClick = {
+                dismissedUpdateVersion = update.latestVersion
+                update.downloadUrl?.let { com.v2ray.ang.util.Utils.openUri(context, it) }
+            }) { Text(stringResource(R.string.fv_download_update)) } },
+            dismissButton = { TextButton(onClick = { dismissedUpdateVersion = update.latestVersion }) {
+                Text(stringResource(R.string.fv_close))
+            } })
+    }
 
     Box(Modifier.fillMaxSize().background(Ink)) {
         if (!settings && state.preferences.visualEffects) {
@@ -152,7 +156,7 @@ fun FilvlessScreen(
                         Text(stringResource(R.string.fv_timer, state.elapsedSeconds / 3600,
                             state.elapsedSeconds / 60 % 60, state.elapsedSeconds % 60),
                             color = Color.White, fontSize = 23.sp, letterSpacing = 2.sp)
-                        Spacer(Modifier.height(6.dp))
+                        Spacer(Modifier.height(16.dp))
                         Text(stringResource(when {
                             state.connectionPending -> R.string.fv_connecting
                             state.connectionFailed -> R.string.fv_connection_failed
@@ -265,7 +269,6 @@ fun FilvlessScreen(
         }
     }
     }
-    if (routingDialog) FilvlessRoutingDialog(state, onDismiss = { routingDialog = false }, onSave = { vpn, direct -> act(MainAction.SaveRouting(vpn, direct)) })
     if (languagePicker) AlertDialog(
         onDismissRequest = { languagePicker = false }, containerColor = Card,
         title = { Text(stringResource(R.string.title_language)) },
@@ -289,13 +292,6 @@ fun FilvlessScreen(
         text = { Column { Text(stringResource(R.string.fv_about_description)); Spacer(Modifier.height(16.dp)); Text(stringResource(R.string.fv_version, BuildConfig.VERSION_NAME), color = Muted) } },
         confirmButton = { TextButton(onClick = { aboutDialog = false; onNavigate(MainDestination.About) }) { Text(stringResource(R.string.fv_licenses)) } },
         dismissButton = { TextButton(onClick = { aboutDialog = false }) { Text(stringResource(R.string.fv_close)) } },
-    )
-    if (subscriptionDialog) AlertDialog(
-        onDismissRequest = { subscriptionDialog = false }, containerColor = Card,
-        title = { Text(stringResource(R.string.fv_subscription)) },
-        text = { Text(stringResource(if (providerDenied) R.string.fv_denied_hint else R.string.fv_manage_subscription_hint)) },
-        confirmButton = { TextButton(onClick = { subscriptionDialog = false; openImport() }) { Text(stringResource(R.string.fv_import)) } },
-        dismissButton = { TextButton(enabled = !loading, onClick = { subscriptionDialog = false; act(MainAction.UpdateSubscriptions) }) { Text(stringResource(R.string.fv_refresh)) } },
     )
     if (forgetDialog) AlertDialog(
         onDismissRequest = { forgetDialog = false }, containerColor = Card,

@@ -111,6 +111,7 @@ class MainActivity : HelperBaseComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        mainViewModel.checkAppUpdateOnResume()
         mainViewModel.onAction(MainAction.RefreshGroups)
     }
 

@@ -39,7 +39,7 @@ class QuickPingWorkerTest {
                 try {
                     assertTrue("Quick batch did not finish", finished.await(5, TimeUnit.SECONDS))
                     assertEquals(14, results.size)
-                    assertTrue(results.values.all { it >= 0 })
+                    assertTrue(results.values.all { it >= 1 })
                     println("QUICK_PING_14_MS=" + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start))
                 } finally { worker.cancel() }
             } finally { guids.forEach(MmkvManager::removeServer) }
