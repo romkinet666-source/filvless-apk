@@ -118,6 +118,8 @@ class AppUpdateActivity : BaseComponentActivity() {
                 if (download.version.isNotBlank()) Text(download.version)
                 val size = download.size.takeIf { it > 0 } ?: details?.size ?: 0L
                 if (size > 0) Text(stringResource(R.string.fv_update_size, size / 1_000_000.0))
+                Text(stringResource(R.string.fv_update_changes), style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.fv_update_generic_changes), style = MaterialTheme.typography.bodyMedium)
                 if (download.stage == "downloading" || download.stage == "waiting") {
                     LinearProgressIndicator(progress = { download.percent / 100f }, modifier = Modifier.fillMaxWidth())
                     Text("${download.percent}%")

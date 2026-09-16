@@ -93,6 +93,7 @@
     <string name="fv_expiry_notification_body">Expiry: %1$s, based on the last subscription update. Renew in the bot.</string>
     <string name="fv_update_size">Download: %1$.1f MB</string>
     <string name="fv_update_changes">What is new</string>
+    <string name="fv_update_generic_changes">Bug fixes</string>
     <string name="fv_update_later">Remind me tomorrow</string>
     <string name="fv_update_waiting_wifi">Waiting for Wi-Fi</string>
     <string name="fv_server_details">Full server name</string>

@@ -118,6 +118,8 @@ fun FilvlessScreen(
             text = { Column(Modifier.verticalScroll(rememberScrollState())) {
                 Text(stringResource(R.string.fv_update_available_hint))
                 if (update.size > 0) Text(stringResource(R.string.fv_update_size, update.size / 1_000_000.0), Modifier.padding(top = 8.dp))
+                Text(stringResource(R.string.fv_update_changes), Modifier.padding(top = 12.dp), fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.fv_update_generic_changes), Modifier.padding(top = 6.dp), fontSize = 13.sp)
             } },
             confirmButton = { TextButton(onClick = {
                 dismissedUpdateVersion = update.latestVersion

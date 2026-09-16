@@ -38,7 +38,7 @@ class EventHistoryActivity : BaseComponentActivity() {
             }
             if (events.isEmpty()) Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(stringResource(R.string.fv_history_empty), color = FilvlessMuted, fontSize = 15.sp)
-            } else LazyColumn(contentPadding = PaddingValues(vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            } else LazyColumn(contentPadding = PaddingValues(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 items(events, key = { it.timestamp }) { event -> EventRow(event) }
             }
         }
@@ -46,9 +46,11 @@ class EventHistoryActivity : BaseComponentActivity() {
 }
 
 @Composable private fun EventRow(event: FilvlessEvent) {
-    Column(Modifier.fillMaxWidth().background(FilvlessCard, RoundedCornerShape(16.dp)).padding(14.dp)) {
-        Text(event.title, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Medium)
-        if (event.detail.isNotBlank()) Text(event.detail, Modifier.padding(top = 3.dp), color = FilvlessMuted, fontSize = 12.sp)
-        Text(DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(event.timestamp)), Modifier.padding(top = 7.dp), color = FilvlessAccent, fontSize = 11.sp)
+    Row(Modifier.fillMaxWidth().background(FilvlessCard, RoundedCornerShape(12.dp)).padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(event.title, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium, maxLines = 1)
+            if (event.detail.isNotBlank()) Text(event.detail, Modifier.padding(top = 1.dp), color = FilvlessMuted, fontSize = 11.sp, maxLines = 1)
+        }
+        Text(DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(event.timestamp)), Modifier.padding(start = 8.dp), color = FilvlessAccent, fontSize = 10.sp, maxLines = 1)
     }
 }

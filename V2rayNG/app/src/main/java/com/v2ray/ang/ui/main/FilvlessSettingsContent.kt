@@ -2,6 +2,7 @@ package com.v2ray.ang.ui.main
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
@@ -83,7 +84,9 @@ internal fun FilvlessSettingsContent(
         val banner = if (state.preferences.visualEffects) Modifier.background(
             Brush.horizontalGradient(listOf(Color(0xFF361750), FilvlessCard, Color(0xFF2C143F))), RoundedCornerShape(18.dp),
         ) else Modifier.background(FilvlessCard, RoundedCornerShape(18.dp))
-        Column(Modifier.fillMaxWidth().then(banner).clickable(role = Role.Button, onClick = onSubscription).padding(16.dp)) {
+        Column(Modifier.fillMaxWidth().then(banner).clickable(
+            interactionSource = remember { MutableInteractionSource() }, indication = null,
+            role = Role.Button, onClick = onSubscription).padding(16.dp)) {
             Text(stringResource(R.string.fv_subscription), color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(6.dp))
             Text(subscriptionLabel, color = FilvlessMuted, fontSize = 13.sp, lineHeight = 18.sp)
@@ -183,7 +186,9 @@ private fun SettingsGlyph(icon: Int) {
 
 @Composable
 private fun SettingsLink(icon: Int, title: Int, trailing: String? = null, onClick: () -> Unit) {
-    Row(Modifier.fillMaxWidth().clickable(role = Role.Button, onClick = onClick).padding(vertical = 8.dp)
+    Row(Modifier.fillMaxWidth().clickable(
+        interactionSource = remember { MutableInteractionSource() }, indication = null,
+        role = Role.Button, onClick = onClick).padding(vertical = 8.dp)
         .semantics(mergeDescendants = true) {}, verticalAlignment = Alignment.CenterVertically) {
         SettingsGlyph(icon)
         Text(stringResource(title), Modifier.weight(1f).padding(start = 10.dp), color = Color.White, fontSize = 15.sp)

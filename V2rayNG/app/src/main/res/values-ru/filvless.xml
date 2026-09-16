@@ -93,6 +93,7 @@
     <string name="fv_expiry_notification_body">Срок до %1$s по данным последнего обновления подписки. Продлить можно в боте.</string>
     <string name="fv_update_size">Размер загрузки: %1$.1f МБ</string>
     <string name="fv_update_changes">Что нового</string>
+    <string name="fv_update_generic_changes">Исправление багов</string>
     <string name="fv_update_later">Напомнить завтра</string>
     <string name="fv_update_waiting_wifi">Ожидаем Wi-Fi</string>
     <string name="fv_server_details">Полное название сервера</string>

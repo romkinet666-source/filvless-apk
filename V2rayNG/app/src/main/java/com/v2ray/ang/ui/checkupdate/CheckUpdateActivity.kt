@@ -102,7 +102,7 @@ fun CheckUpdateScreen(
         AlertDialog(
             onDismissRequest = { viewModel.dismissUpdateDialog() },
             title = { Text(stringResource(R.string.update_new_version_found, result.latestVersion ?: "")) },
-            text = { Text(stringResource(R.string.fv_update_available_hint)) },
+            text = { Column { Text(stringResource(R.string.fv_update_available_hint)); Spacer(Modifier.height(12.dp)); Text(stringResource(R.string.fv_update_changes), style = MaterialTheme.typography.titleSmall); Text(stringResource(R.string.fv_update_generic_changes)) } },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.dismissUpdateDialog()
