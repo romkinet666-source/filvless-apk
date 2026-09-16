@@ -63,7 +63,7 @@ class MainActivity : HelperBaseComponentActivity() {
 
     private val requestVpnPermission =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-            if (it.resultCode == RESULT_OK) startV2Ray()
+            if (it.resultCode == RESULT_OK && mainViewModel.uiState.value.connectionPending) startV2Ray()
             else mainViewModel.connectionCancelled()
         }
 
@@ -196,7 +196,8 @@ class MainActivity : HelperBaseComponentActivity() {
     }
 
     private fun handleFabAction() {
-        if (mainViewModel.uiState.value.isRunning) {
+        if (mainViewModel.uiState.value.isRunning || mainViewModel.uiState.value.connectionPending) {
+            mainViewModel.connectionCancelled()
             LauncherManager.stopService(this)
         } else {
             requestServiceStart()

@@ -60,4 +60,34 @@ class AppUpdatePolicyStorageTest {
             MmkvManager.encodeSettings(AppUpdatePolicy.KEY, original)
         }
     }
+
+    @Test fun cancelledVersionStaysCancelledUntilExplicitRetry() = runBlocking {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val policy = MmkvManager.decodeSettingsString(AppUpdatePolicy.KEY)
+        val cancelled = MmkvManager.decodeSettingsString("filvless_update_cancelled")
+        val state = File(context.filesDir, "app-update.json")
+        check(!state.exists())
+        val future = CheckUpdateResult(true, "98.0.0-preview",
+            downloadUrl = "https://github.com/romkinet666-source/filvless-apk/releases/download/v98.0.0-preview/Filvless-98.0.0-preview-universal.apk",
+            sha256 = "a".repeat(64), size = 100)
+        try {
+            AppUpdateDownload.setPolicy(context, AppUpdatePolicy.ANY_NETWORK)
+            AppUpdateDownload.enqueue(context, future, userRequested = true)
+            val id = JSONObject(state.readText()).getLong("id")
+            AppUpdateDownload.cancel(context)
+            assertFalse(state.exists())
+            context.getSystemService(DownloadManager::class.java).query(DownloadManager.Query().setFilterById(id)).use {
+                assertFalse(it.moveToFirst())
+            }
+            AppUpdateDownload.enqueue(context, future)
+            assertFalse(state.exists())
+            AppUpdateDownload.enqueue(context, future, userRequested = true)
+            assertTrue(state.exists())
+            assertEquals("", MmkvManager.decodeSettingsString("filvless_update_cancelled"))
+        } finally {
+            AppUpdateDownload.cancel(context)
+            MmkvManager.encodeSettings(AppUpdatePolicy.KEY, policy)
+            MmkvManager.encodeSettings("filvless_update_cancelled", cancelled)
+        }
+    }
 }

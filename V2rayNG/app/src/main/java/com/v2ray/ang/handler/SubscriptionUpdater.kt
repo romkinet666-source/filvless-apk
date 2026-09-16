@@ -189,7 +189,7 @@ object SubscriptionUpdater {
                 val result = AngConfigManager.updateConfigViaSub(
                     com.v2ray.ang.dto.entities.SubscriptionCache(subId, subscription)
                 )
-                if (result.successCount > 0) applicationContext.sendBroadcast(
+                if (result.successCount > 0 || result.failureCount > 0) applicationContext.sendBroadcast(
                     android.content.Intent("${AppConfig.ANG_PACKAGE}.SUBSCRIPTIONS_UPDATED").setPackage(AppConfig.ANG_PACKAGE))
                 if (result.failureCount > 0) Result.retry() else Result.success()
             }

@@ -48,6 +48,14 @@ internal fun DevicesContent(state: DevicesState, onBack: () -> Unit, onRefresh: 
     var picker by remember { mutableStateOf(false) }
     var information by remember { mutableStateOf(false) }
     var deleting by remember { mutableStateOf<FilvlessDevice?>(null) }
+    var renaming by remember { mutableStateOf<FilvlessDevice?>(null) }
+    var alias by remember { mutableStateOf("") }
+    var aliasRevision by remember { mutableIntStateOf(0) }
+    fun aliasKey(device: FilvlessDevice) = "filvless_device_alias_${state.selectedId}_${device.id}"
+    fun deviceName(device: FilvlessDevice): String {
+        @Suppress("UNUSED_VARIABLE") val revision = aliasRevision
+        return com.v2ray.ang.handler.MmkvManager.decodeSettingsString(aliasKey(device)).orEmpty().ifBlank { device.model }
+    }
     Column(Modifier.fillMaxSize().background(Color(0xFF0B080F)).safeDrawingPadding()) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack, modifier = Modifier.background(FilvlessCard, CircleShape)) {
@@ -102,11 +110,15 @@ internal fun DevicesContent(state: DevicesState, onBack: () -> Unit, onRefresh: 
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(painterResource(R.drawable.fv_phone), null, tint = FilvlessAccent, modifier = Modifier.size(22.dp))
                             Column(Modifier.weight(1f).padding(start = 10.dp)) {
-                                Text(device.model.ifBlank { stringResource(R.string.fv_devices_unknown) }, color = Color.White,
+                                Text(deviceName(device).ifBlank { stringResource(R.string.fv_devices_unknown) }, color = Color.White,
                                     fontSize = 15.sp, lineHeight = 19.sp, fontWeight = FontWeight.SemiBold)
                                 Text(listOf(device.platform, device.osVersion).filter { it.isNotBlank() }.joinToString(" "),
                                     color = FilvlessMuted, fontSize = 12.sp)
                                 if (device.isCurrent) Text(stringResource(R.string.fv_devices_current), color = FilvlessAccent, fontSize = 11.sp)
+                            }
+                            IconButton(onClick = { alias = deviceName(device); renaming = device }, enabled = !state.loading) {
+                                Icon(painterResource(R.drawable.ic_edit_24dp), stringResource(R.string.fv_device_rename),
+                                    tint = FilvlessAccent, modifier = Modifier.size(18.dp))
                             }
                             IconButton(onClick = { deleting = device }, enabled = !state.loading && state.error == null) {
                                 Icon(painterResource(R.drawable.ic_delete_24dp), stringResource(R.string.fv_devices_remove),
@@ -121,6 +133,17 @@ internal fun DevicesContent(state: DevicesState, onBack: () -> Unit, onRefresh: 
             }
         }
     }
+    renaming?.let { device -> AlertDialog(onDismissRequest = { renaming = null },
+        title = { Text(stringResource(R.string.fv_device_rename)) },
+        text = { Column {
+            Text(stringResource(R.string.fv_device_alias_hint), fontSize = 13.sp)
+            OutlinedTextField(value = alias, onValueChange = { alias = it.replace("\n", " ").take(40) }, singleLine = true,
+                label = { Text(stringResource(R.string.fv_device_name)) })
+        } },
+        confirmButton = { TextButton(onClick = {
+            com.v2ray.ang.handler.MmkvManager.encodeSettings(aliasKey(device), alias.trim()); aliasRevision++; renaming = null
+        }) { Text(stringResource(R.string.fv_save)) } },
+        dismissButton = { TextButton(onClick = { renaming = null }) { Text(stringResource(R.string.fv_cancel)) } }) }
     if (information) AlertDialog(onDismissRequest = { information = false }, containerColor = FilvlessCard,
         title = { Text(stringResource(R.string.fv_devices)) }, text = { Text(stringResource(R.string.fv_devices_hint)) },
         confirmButton = { TextButton(onClick = { information = false }) { Text(stringResource(android.R.string.ok)) } })

@@ -28,6 +28,8 @@ class NetworkRecoveryTest {
         val context = instrumentation.targetContext
         check(VpnService.prepare(context) == null) { "Grant emulator ACTIVATE_VPN app-op first" }
         check(MmkvManager.decodeAllServerList().isEmpty()) { "Requires empty QA installation" }
+        val tileTest = InstrumentationRegistry.getArguments().getString("quickTile") == "true"
+        val tileComponent = "ru.filvless.vpn/com.v2ray.ang.service.QSTileService"
         val oldSelected = MmkvManager.getSelectServer()
         val guid = UUID.randomUUID().toString()
         val events = LinkedBlockingQueue<String>()
@@ -58,7 +60,13 @@ class NetworkRecoveryTest {
             shell("svc wifi enable"); shell("svc data enable")
             MmkvManager.encodeServerConfig(guid, ProfileItem(configType = EConfigType.CUSTOM, remarks = "QA network recovery"))
             MmkvManager.encodeServerRaw(guid, """{"outbounds":[{"protocol":"freedom"}],"log":{"loglevel":"warning"}}""")
-            LauncherManager.startService(context, guid)
+            if (tileTest) {
+                MmkvManager.setSelectServer(guid)
+                shell("cmd statusbar add-tile $tileComponent")
+                shell("cmd statusbar expand-settings")
+                Thread.sleep(2000)
+                shell("cmd statusbar click-tile $tileComponent")
+            } else LauncherManager.startService(context, guid)
             expect("AVAILABLE")
             val diagnosticSteps = mutableListOf<com.v2ray.ang.handler.DiagnosticStep>()
             kotlinx.coroutines.runBlocking {
@@ -74,7 +82,7 @@ class NetworkRecoveryTest {
             expect("WAITING_NETWORK")
             shell("svc wifi enable")
             expect("RECOVERING"); expect("AVAILABLE")
-            LauncherManager.stopService(context)
+            if (tileTest) shell("cmd statusbar click-tile $tileComponent") else LauncherManager.stopService(context)
             expect("STOPPED")
             events.clear()
             shell("svc wifi disable"); shell("svc data enable")
@@ -82,6 +90,7 @@ class NetworkRecoveryTest {
         } finally {
             LauncherManager.stopService(context)
             shell("svc wifi enable"); shell("svc data enable")
+            if (tileTest) { shell("cmd statusbar remove-tile $tileComponent"); shell("cmd statusbar collapse") }
             context.unregisterReceiver(receiver)
             MmkvManager.removeServer(guid)
             MmkvManager.setSelectServer(oldSelected.orEmpty())

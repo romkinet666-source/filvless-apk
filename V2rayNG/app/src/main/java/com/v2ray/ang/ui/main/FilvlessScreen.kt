@@ -75,6 +75,22 @@ fun FilvlessScreen(
     val context = LocalContext.current
     var settings by rememberSaveable { mutableStateOf(false) }
     var importing by rememberSaveable { mutableStateOf(false) }
+    var showWhatsNew by rememberSaveable {
+        mutableStateOf(runCatching {
+            val info = context.packageManager.getPackageInfo(context.packageName, 0)
+            info.lastUpdateTime > info.firstInstallTime &&
+                com.v2ray.ang.handler.MmkvManager.decodeSettingsString("filvless_whats_new_seen") != com.v2ray.ang.BuildConfig.VERSION_NAME
+        }.getOrDefault(false))
+    }
+    fun dismissWhatsNew() {
+        com.v2ray.ang.handler.MmkvManager.encodeSettings("filvless_whats_new_seen", com.v2ray.ang.BuildConfig.VERSION_NAME)
+        showWhatsNew = false
+    }
+    if (showWhatsNew && state.appUpdate == null) AlertDialog(onDismissRequest = { dismissWhatsNew() },
+        containerColor = Card,
+        title = { Text(stringResource(R.string.fv_whats_new_title, com.v2ray.ang.BuildConfig.VERSION_NAME)) },
+        text = { Text(stringResource(R.string.fv_whats_new_068)) },
+        confirmButton = { TextButton(onClick = { dismissWhatsNew() }) { Text(stringResource(android.R.string.ok)) } })
     var subscriptionText by rememberSaveable { mutableStateOf("") }
     var languagePicker by rememberSaveable { mutableStateOf(false) }
     var aboutDialog by rememberSaveable { mutableStateOf(false) }
@@ -185,7 +201,8 @@ fun FilvlessScreen(
                                 com.v2ray.ang.service.ConnectionHealth.UNREACHABLE -> R.string.fv_health_unreachable
                                 com.v2ray.ang.service.ConnectionHealth.WAITING_NETWORK -> R.string.fv_health_waiting
                                 com.v2ray.ang.service.ConnectionHealth.RECOVERING -> R.string.fv_health_recovering
-                                else -> R.string.fv_connected
+                                com.v2ray.ang.service.ConnectionHealth.AVAILABLE -> R.string.fv_connected
+                                else -> R.string.fv_health_checking
                             }
                             else -> R.string.fv_disconnected
                         }),
@@ -194,7 +211,7 @@ fun FilvlessScreen(
                                 .padding(horizontal = 20.dp, vertical = 7.dp),
                             color = Color.White, fontSize = 14.sp)
                         Spacer(Modifier.height(12.dp))
-                        val powerLabel = stringResource(if (state.isRunning) R.string.fv_disconnect else R.string.fv_connect)
+                        val powerLabel = stringResource(if (state.connectionPending) R.string.fv_cancel else if (state.isRunning) R.string.fv_disconnect else R.string.fv_connect)
                         Box(Modifier.size(100.dp).graphicsLayer {
                             scaleX = 1f + .04f * connectionEmphasis + verifiedScale
                             scaleY = 1f + .04f * connectionEmphasis + verifiedScale
@@ -205,7 +222,7 @@ fun FilvlessScreen(
                             onDrawBehind { drawCircle(halo, radius = radius) }
                         }.background(Brush.verticalGradient(listOf(Ink, if (state.preferences.visualEffects) powerGlow else Ink)), CircleShape)
                             .border(2.dp, if (state.isRunning) Color(0xFFE5C7FF) else Color(0xFFE8DEEF), CircleShape)
-                            .clickable(enabled = !state.connectionPending && (state.isRunning || (!loading && servers.any { it.guid == state.selectedGuid })), role = Role.Button) { act(MainAction.ToggleService) }
+                            .clickable(enabled = state.connectionPending || state.isRunning || (!loading && servers.any { it.guid == state.selectedGuid }), role = Role.Button) { act(MainAction.ToggleService) }
                             .semantics { contentDescription = powerLabel }, contentAlignment = Alignment.Center) {
                             if (state.connectionPending) CircularProgressIndicator(Modifier.size(44.dp), color = Violet, strokeWidth = 3.dp)
                             else Canvas(Modifier.size(48.dp)) {
@@ -214,6 +231,9 @@ fun FilvlessScreen(
                                     Size(size.width - stroke * 2, size.height - stroke * 2), style = Stroke(stroke, cap = StrokeCap.Round))
                                 drawLine(Color.White, Offset(size.width / 2, 0f), Offset(size.width / 2, size.height * .43f), stroke, StrokeCap.Round)
                             }
+                        }
+                        if (state.connectionPending) TextButton(onClick = { act(MainAction.ToggleService) }) {
+                            Text(stringResource(R.string.fv_cancel), color = Violet)
                         }
                         Spacer(Modifier.height(10.dp))
                         val selected = servers.firstOrNull { it.guid == state.selectedGuid }
@@ -259,6 +279,9 @@ fun FilvlessScreen(
                         }
                         TextButton(onClick = { act(MainAction.UpdateSubscriptions) }, enabled = !loading) { Text(stringResource(R.string.fv_refresh), color = Violet) }
                     }
+                }
+                if (state.subscriptionUpdateFailed) item {
+                    Text(stringResource(R.string.fv_sub_kept), Modifier.padding(horizontal = 8.dp, vertical = 4.dp), color = Muted, fontSize = 12.sp)
                 }
                 if (loading) item { LinearProgressIndicator(Modifier.fillMaxWidth(), color = Violet, trackColor = Card) }
                 if ((servers.isEmpty() || providerDenied) && !loading) item {

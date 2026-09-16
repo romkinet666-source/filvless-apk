@@ -20,7 +20,10 @@ internal fun validUpdateDownload(url: String?, hash: String?, size: Long): Boole
     url?.matches(Regex("https://github\\.com/romkinet666-source/filvless-apk/releases/download/v[0-9][A-Za-z0-9._-]*/Filvless-[A-Za-z0-9._-]+-universal\\.apk")) == true &&
         hash?.matches(Regex("[a-fA-F0-9]{64}")) == true && size in 1..250_000_000L
 
-internal data class DownloadState(val stage: String, val version: String = "", val percent: Int = 0, val size: Long = 0, val notes: String = "", val waitingForWifi: Boolean = false)
+internal fun updateSpaceRequired(size: Long): Long = size.coerceAtLeast(0) + 32_000_000L
+internal class UpdateDownloadException(val reason: String) : Exception(reason)
+
+internal data class DownloadState(val stage: String, val version: String = "", val percent: Int = 0, val size: Long = 0, val notes: String = "", val waitingForWifi: Boolean = false, val failure: String = "")
 
 /** State and APK belong to this app; a file lock also serializes the :bg worker process. */
 internal object AppUpdateDownload {
@@ -55,14 +58,18 @@ internal object AppUpdateDownload {
     suspend fun enqueue(context: Context, update: CheckUpdateResult, retry: Boolean = false, userRequested: Boolean = false) = locked(context) {
         val policy = AppUpdatePolicy.read()
         if (!policy.allowsDownload(userRequested)) return@locked
+        if (!userRequested && MmkvManager.decodeSettingsString("filvless_update_cancelled") == update.latestVersion) return@locked
         if (!update.hasUpdate || compareReleaseVersions(update.latestVersion.orEmpty(), BuildConfig.VERSION_NAME) <= 0) return@locked
         require(validUpdateDownload(update.downloadUrl, update.sha256, update.size))
+        if (userRequested) MmkvManager.encodeSettings("filvless_update_cancelled", "")
         val previous = read(context)
         if (previous != null && !retry) {
             // Keep an existing package until installation/cancellation is resolved.
             if (compareReleaseVersions(previous.optString("version"), update.latestVersion.orEmpty()) >= 0 ||
                 !previous.optBoolean("failed")) return@locked
         }
+        val directory = requireNotNull(context.getExternalFilesDir(null))
+        if (android.os.StatFs(directory.path).availableBytes < updateSpaceRequired(update.size)) throw UpdateDownloadException("space")
         clear(context, previous)
         apk(context).parentFile?.mkdirs()
         val request = DownloadManager.Request(Uri.parse(update.downloadUrl))
@@ -78,6 +85,11 @@ internal object AppUpdateDownload {
             write(context, JSONObject().put("id", id).put("version", update.latestVersion)
                 .put("notes", conciseReleaseNotes(update.releaseNotes)).put("wifiOnly", policy == AppUpdatePolicy.WIFI_ONLY).put("url", update.downloadUrl).put("hash", update.sha256).put("size", update.size).put("offered", false))
         } catch (error: Exception) { manager(context).remove(id); throw error }
+    }
+    suspend fun cancel(context: Context) = locked(context) {
+        val state = read(context)
+        if (state != null) MmkvManager.encodeSettings("filvless_update_cancelled", state.optString("version"))
+        clear(context, state)
     }
     suspend fun setPolicy(context: Context, policy: AppUpdatePolicy) {
         val pending = locked(context) {
@@ -104,15 +116,16 @@ internal object AppUpdateDownload {
         if (compareReleaseVersions(BuildConfig.VERSION_NAME, version) >= 0) {
             clear(context, state); return@locked DownloadState("none")
         }
-        if (state.optBoolean("failed")) return@locked DownloadState("failed", version)
+        if (state.optBoolean("failed")) return@locked DownloadState("failed", version, size = state.optLong("size"), notes = state.optString("notes"), failure = "verification")
         val result = manager(context).query(DownloadManager.Query().setFilterById(state.getLong("id"))).use { cursor ->
             if (cursor == null || !cursor.moveToFirst()) return@use DownloadState("failed", version)
             when (cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))) {
                 DownloadManager.STATUS_SUCCESSFUL -> {
                     if (verify(context, state)) DownloadState("ready", version, 100)
-                    else { write(context, state.put("failed", true)); apk(context).delete(); DownloadState("failed", version) }
+                    else { write(context, state.put("failed", true)); apk(context).delete(); DownloadState("failed", version, failure = "verification") }
                 }
-                DownloadManager.STATUS_FAILED -> DownloadState("failed", version)
+                DownloadManager.STATUS_FAILED -> DownloadState("failed", version, failure =
+                    if (cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON)) == DownloadManager.ERROR_INSUFFICIENT_SPACE) "space" else "download")
                 else -> {
                     val bytes = cursor.getLong(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR))
                     val waiting = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS)) == DownloadManager.STATUS_PAUSED &&

@@ -383,6 +383,7 @@ class MainViewModel(
         connectionTimeoutJob = viewModelScope.launch {
             kotlinx.coroutines.delay(30_000)
             if (uiState.value.connectionPending) {
+                dataSource.sendMsg2Service(AppConfig.MSG_STATE_STOP, "")
                 _uiState.update { it.copy(connectionPending = false, connectionFailed = true) }
             }
         }
@@ -533,6 +534,7 @@ class MainViewModel(
                 if (state.selectedGroupId != groupId) state else state.copy(
                     subscriptionExpiresAt = subscription?.expiresAtSeconds,
                     subscriptionUpdatedAt = subscription?.lastUpdated ?: -1,
+                    subscriptionUpdateFailed = subscription?.lastUpdateFailed == true,
                 )
             }
         }

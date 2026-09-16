@@ -30,6 +30,7 @@ data class MainUiState(
     val connectionFailed: Boolean = false,
     val subscriptionExpiresAt: Long? = null,
     val subscriptionUpdatedAt: Long = -1,
+    val subscriptionUpdateFailed: Boolean = false,
     val groups: List<GroupMapItem> = emptyList(),
     val selectedGroupId: String = "",
     val selectedGuid: String? = null,

@@ -41,6 +41,12 @@ internal fun FilvlessSettingsContent(
     onDevices: () -> Unit,
     onAction: (MainAction) -> Unit,
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val tileLabel = stringResource(R.string.app_name)
+    var tileHelp by remember { mutableStateOf(false) }
+    if (tileHelp) AlertDialog(onDismissRequest = { tileHelp = false },
+        title = { Text(stringResource(R.string.fv_tile)) }, text = { Text(stringResource(R.string.fv_tile_hint)) },
+        confirmButton = { TextButton(onClick = { tileHelp = false }) { Text(stringResource(R.string.fv_close)) } })
     var downloadPolicyDialog by remember { mutableStateOf(false) }
     val policyLabels = mapOf(AppUpdatePolicy.WIFI_ONLY to R.string.fv_update_wifi,
         AppUpdatePolicy.ANY_NETWORK to R.string.fv_update_any, AppUpdatePolicy.MANUAL to R.string.fv_update_manual)
@@ -74,6 +80,11 @@ internal fun FilvlessSettingsContent(
             Text(stringResource(R.string.fv_subscription), color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(6.dp))
             Text(subscriptionLabel, color = FilvlessMuted, fontSize = 13.sp, lineHeight = 18.sp)
+            if (state.subscriptionUpdatedAt > 0) Text(stringResource(R.string.fv_last_updated,
+                DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(state.subscriptionUpdatedAt))),
+                Modifier.padding(top = 4.dp), color = FilvlessMuted, fontSize = 11.sp)
+            if (state.subscriptionUpdateFailed) Text(stringResource(R.string.fv_sub_kept),
+                Modifier.padding(top = 4.dp), color = Color(0xFFE5BA82), fontSize = 12.sp)
             Text(stringResource(R.string.fv_buy_subscription), Modifier.padding(top = 5.dp), color = FilvlessAccent, fontSize = 12.sp)
         }
         Column(Modifier.fillMaxWidth().background(FilvlessCard, RoundedCornerShape(18.dp)).padding(horizontal = 14.dp, vertical = 2.dp)) {
@@ -88,6 +99,22 @@ internal fun FilvlessSettingsContent(
             SettingsLink(R.drawable.ic_translate_24dp, R.string.title_language, language, onLanguage)
         }
         SettingsGroup(R.string.fv_functions) {
+            SettingsLink(R.drawable.fv_power, R.string.fv_tile, onClick = {
+                if (android.os.Build.VERSION.SDK_INT >= 33) {
+                    try {
+                        context.getSystemService(android.app.StatusBarManager::class.java).requestAddTileService(
+                            android.content.ComponentName(context, com.v2ray.ang.service.QSTileService::class.java),
+                            tileLabel, android.graphics.drawable.Icon.createWithResource(context, R.drawable.ic_stat_name),
+                            context.mainExecutor) { result ->
+                                if (result != android.app.StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ADDED &&
+                                    result != android.app.StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ALREADY_ADDED) tileHelp = true
+                            }
+                    } catch (_: Exception) { tileHelp = true }
+                } else tileHelp = true
+            })
+            SettingsLink(R.drawable.fv_phone, R.string.fv_background, onClick = {
+                context.startActivity(android.content.Intent(context, BackgroundWorkActivity::class.java))
+            })
             SettingsToggle(R.drawable.fv_phone, R.string.fv_expiry_reminder, R.string.fv_expiry_reminder_hint,
                 state.preferences.expiryReminder, state.preferencesLoaded) { onAction(MainAction.SetPreference(FilvlessPreference.EXPIRY_REMINDER, it)) }
             SettingsToggle(R.drawable.fv_ping, R.string.fv_auto_update, R.string.fv_auto_update_hint,

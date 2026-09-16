@@ -64,6 +64,9 @@ class DiagnosticsActivity : BaseComponentActivity() {
                 TextButton(onClick = { Utils.openUri(this@DiagnosticsActivity, "https://t.me/Godfather099") }) {
                     Text(stringResource(R.string.fv_support))
                 }
+                TextButton(onClick = { startActivity(android.content.Intent(this@DiagnosticsActivity, BackgroundWorkActivity::class.java)) }) {
+                    Text(stringResource(R.string.fv_background))
+                }
                 TextButton(onClick = { finish() }) { Text(stringResource(R.string.fv_close)) }
             }
         }

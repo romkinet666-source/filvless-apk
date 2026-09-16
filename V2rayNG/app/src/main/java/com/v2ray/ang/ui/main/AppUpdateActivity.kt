@@ -72,7 +72,9 @@ class AppUpdateActivity : BaseComponentActivity() {
                 }
                 // Show release details and Later before entering the system installer.
             } catch (cancelled: CancellationException) { throw cancelled }
-            catch (_: Exception) { download = DownloadState("failed") }
+            catch (error: com.v2ray.ang.handler.UpdateDownloadException) { download = DownloadState("failed", failure = error.reason) }
+            catch (_: java.io.IOException) { download = DownloadState("failed", failure = "network") }
+            catch (_: Exception) { download = DownloadState("failed", failure = "download") }
         }
     }
     @Suppress("DEPRECATION")
@@ -104,7 +106,13 @@ class AppUpdateActivity : BaseComponentActivity() {
                     "ready" -> R.string.fv_update_ready
                     "waiting" -> if (download.waitingForWifi) R.string.fv_update_waiting_wifi else R.string.fv_update_waiting_network
                     "downloading" -> R.string.fv_update_downloading
-                    "failed" -> R.string.fv_update_failed
+                    "failed" -> when (download.failure) {
+                        "space" -> R.string.fv_update_no_space
+                        "verification" -> R.string.fv_update_bad_package
+                        "network" -> R.string.fv_update_network_error
+                        else -> R.string.fv_update_failed
+                    }
+                    "cancelled" -> R.string.fv_update_cancelled
                     "none" -> R.string.update_already_latest_version
                     else -> R.string.update_checking_for_update
                 }))
@@ -120,6 +128,13 @@ class AppUpdateActivity : BaseComponentActivity() {
                     LinearProgressIndicator(progress = { download.percent / 100f }, modifier = Modifier.fillMaxWidth())
                     Text("${download.percent}%")
                     Text(stringResource(R.string.fv_update_background_hint))
+                    TextButton(onClick = {
+                        refreshJob?.cancel()
+                        lifecycleScope.launch {
+                            AppUpdateDownload.cancel(this@AppUpdateActivity)
+                            download = DownloadState("cancelled")
+                        }
+                    }) { Text(stringResource(R.string.fv_update_cancel_download)) }
                 }
                 if (download.stage == "checking") CircularProgressIndicator()
                 if (permissionNeeded) {
@@ -130,7 +145,7 @@ class AppUpdateActivity : BaseComponentActivity() {
                 } else if (download.stage == "ready") Button(onClick = { install() }, enabled = !installerOpened) {
                     Text(stringResource(R.string.fv_update_install))
                 }
-                if (download.stage == "failed") Button(onClick = { refresh(false, retry = true) }) {
+                if (download.stage == "failed" || download.stage == "cancelled") Button(onClick = { refresh(false, retry = true) }) {
                     Text(stringResource(R.string.fv_devices_retry))
                 }
                 if (download.version.isNotBlank()) TextButton(onClick = {

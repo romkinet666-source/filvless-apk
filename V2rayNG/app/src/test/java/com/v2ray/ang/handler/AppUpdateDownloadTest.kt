@@ -4,6 +4,10 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class AppUpdateDownloadTest {
+    @Test fun reservesSpaceBeyondApkSize() {
+        assertEquals(119_000_000L, updateSpaceRequired(87_000_000L))
+        assertEquals(282_000_000L, updateSpaceRequired(250_000_000L))
+    }
     private val url = "https://github.com/romkinet666-source/filvless-apk/releases/download/v0.6.5-preview/Filvless-0.6.5-preview-universal.apk"
     @Test fun acceptsOnlyBoundedVerifiedReleaseAssets() {
         assertTrue(validUpdateDownload(url, "a".repeat(64), 87_000_000))

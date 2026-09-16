@@ -35,9 +35,11 @@ class QSTileService : TileService() {
             qsTile?.label = getString(R.string.app_name)
         } else if (state == Tile.STATE_ACTIVE) {
             qsTile?.state = Tile.STATE_ACTIVE
-            qsTile?.label = CoreServiceManager.getRunningServerName()
+            qsTile?.label = getString(R.string.app_name)
         }
 
+        if (android.os.Build.VERSION.SDK_INT >= 29) qsTile?.subtitle = getString(
+            if (state == Tile.STATE_ACTIVE) R.string.fv_connected else R.string.fv_disconnected)
         qsTile?.updateTile()
     }
 
@@ -53,6 +55,7 @@ class QSTileService : TileService() {
         } else {
             setState(Tile.STATE_INACTIVE)
         }
+        if (mMsgReceive != null) return
         mMsgReceive = ReceiveMessageHandler(this)
         val mFilter = IntentFilter(AppConfig.BROADCAST_ACTION_ACTIVITY)
         ContextCompat.registerReceiver(applicationContext, mMsgReceive, mFilter, Utils.receiverFlags())
@@ -81,13 +84,27 @@ class QSTileService : TileService() {
         super.onClick()
         when (qsTile.state) {
             Tile.STATE_INACTIVE -> {
-                LauncherManager.startServiceFromToggle(this)
+                if (com.v2ray.ang.handler.MmkvManager.getSelectServer().isNullOrBlank() ||
+                    (com.v2ray.ang.handler.SettingsManager.isVpnMode() && android.net.VpnService.prepare(this) != null)) {
+                    openApp()
+                } else LauncherManager.startServiceFromToggle(this)
             }
 
             Tile.STATE_ACTIVE -> {
                 LauncherManager.stopService(this)
             }
         }
+    }
+
+    // The PendingIntent overload requires API 34. Older Android needs the guarded Intent overload.
+    @android.annotation.SuppressLint("StartActivityAndCollapseDeprecated")
+    @Suppress("DEPRECATION")
+    private fun openApp() {
+        val intent = Intent(this, com.v2ray.ang.ui.main.MainActivity::class.java)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        if (android.os.Build.VERSION.SDK_INT >= 34) startActivityAndCollapse(android.app.PendingIntent.getActivity(
+            this, 0, intent, android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE))
+        else startActivityAndCollapse(intent)
     }
 
     private var mMsgReceive: BroadcastReceiver? = null

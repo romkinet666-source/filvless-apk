@@ -76,13 +76,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
             </intent-filter>
-            <intent-filter>
-                <action android:name="android.service.quicksettings.action.QS_TILE_PREFERENCES" />
-            </intent-filter>
 
             <meta-data
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE_PREFERENCES" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
         </activity>
         <activity
             android:name=".ui.server.ServerVmessActivity"
@@ -310,7 +311,7 @@
             android:exported="true"
             android:foregroundServiceType="specialUse"
             android:icon="@drawable/ic_stat_name"
-            android:label="@string/app_tile_name"
+            android:label="@string/app_name"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
             android:process=":daemon">
             <intent-filter>
@@ -368,6 +369,7 @@
                 android:resource="@xml/cache_paths" />
         </provider>
 
+        <activity android:name=".ui.main.BackgroundWorkActivity" android:exported="false" />
         <activity android:name=".ui.main.DiagnosticsActivity" android:exported="false" />
         <activity android:name=".ui.main.AppUpdateActivity" android:exported="false" />
         <receiver android:name=".receiver.AppUpdatedReceiver" android:exported="false">

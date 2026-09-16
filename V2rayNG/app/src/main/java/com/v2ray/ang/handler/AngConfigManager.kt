@@ -296,6 +296,13 @@ object AngConfigManager {
         subid: String,
         append: Boolean,
     ) {
+        if (!append && subid.isNotBlank() && configs.any {
+                com.v2ray.ang.ui.main.isUnsupportedDeviceNotice(it.profile.remarks)
+            } && MmkvManager.decodeServerList(subid).any { guid ->
+                MmkvManager.decodeServerConfig(guid)?.remarks?.let {
+                    !com.v2ray.ang.ui.main.isUnsupportedDeviceNotice(it)
+                } == true
+            }) throw IllegalArgumentException("Subscription returned a provider notice")
         val keyToProfile = linkedMapOf<String, ProfileItem>()
         val rawConfigs = mutableMapOf<String, String>()
 
@@ -459,6 +466,13 @@ object AngConfigManager {
      * @return Subscription update result.
      */
     fun updateConfigViaSub(it: SubscriptionCache): SubscriptionUpdateResult {
+        fun failed(): SubscriptionUpdateResult {
+            MmkvManager.decodeSubscription(it.guid)?.let { current ->
+                current.lastUpdateFailed = true
+                MmkvManager.encodeSubscription(it.guid, current)
+            }
+            return SubscriptionUpdateResult(failureCount = 1)
+        }
         try {
             // Check if disabled
             if (!it.subscription.enabled) {
@@ -475,11 +489,11 @@ object AngConfigManager {
 
             val url = HttpUtil.toIdnUrl(it.subscription.url)
             if (!Utils.isValidUrl(url)) {
-                return SubscriptionUpdateResult(failureCount = 1)
+                return failed()
             }
             if (!it.subscription.allowInsecureUrl) {
                 if (!Utils.isValidSubUrl(url)) {
-                    return SubscriptionUpdateResult(failureCount = 1)
+                    return failed()
                 }
             }
             LogUtil.i(AppConfig.TAG, "Updating subscription")
@@ -528,11 +542,12 @@ object AngConfigManager {
                 }
             }
             if (configText.isEmpty()) {
-                return SubscriptionUpdateResult(failureCount = 1)
+                return failed()
             }
 
             val count = parseConfigViaSub(configText, it.guid, false)
             if (count > 0) {
+                it.subscription.lastUpdateFailed = false
                 it.subscription.lastUpdated = System.currentTimeMillis()
                 it.subscription.expiresAtSeconds = expiresAtSeconds
                 MmkvManager.encodeSubscription(it.guid, it.subscription)
@@ -543,11 +558,11 @@ object AngConfigManager {
                 )
             } else {
                 // Got response but no valid configs parsed
-                return SubscriptionUpdateResult(failureCount = 1)
+                return failed()
             }
         } catch (e: Exception) {
             LogUtil.e(AppConfig.TAG, "Failed to update config via subscription", e)
-            return SubscriptionUpdateResult(failureCount = 1)
+            return failed()
         }
     }
 

@@ -55,4 +55,24 @@ class DevicesScreenTest {
         compose.onNodeWithText(text(R.string.fv_devices_retry)).performClick()
         compose.runOnIdle { assertTrue(retried) }
     }
+
+    @Test fun deviceAliasIsLocalAndCanBeReset() {
+        val device = FilvlessDevice("c".repeat(64), "QA phone", "Android", "15", "", true)
+        val key = "filvless_device_alias_qa-alias_${device.id}"
+        val old = com.v2ray.ang.handler.MmkvManager.decodeSettingsString(key)
+        try {
+            compose.setContent { AppTheme { DevicesContent(DevicesState(
+                subscriptions = listOf(DeviceSubscription("qa-alias", "QA")), selectedId = "qa-alias", loading = false,
+                snapshot = DeviceSnapshot(listOf(device), 5)), {}, {}, {}, {}) } }
+            compose.onNodeWithContentDescription(text(R.string.fv_device_rename)).performClick()
+            compose.onNode(hasSetTextAction()).performTextReplacement("My phone")
+            compose.onNodeWithText(text(R.string.fv_save)).performClick()
+            compose.onNodeWithText("My phone").assertIsDisplayed()
+            assertEquals("My phone", com.v2ray.ang.handler.MmkvManager.decodeSettingsString(key))
+            compose.onNodeWithContentDescription(text(R.string.fv_device_rename)).performClick()
+            compose.onNode(hasSetTextAction()).performTextReplacement("")
+            compose.onNodeWithText(text(R.string.fv_save)).performClick()
+            compose.onNodeWithText("QA phone").assertIsDisplayed()
+        } finally { com.v2ray.ang.handler.MmkvManager.encodeSettings(key, old) }
+    }
 }

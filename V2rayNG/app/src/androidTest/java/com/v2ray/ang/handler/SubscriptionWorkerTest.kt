@@ -25,6 +25,7 @@ class SubscriptionWorkerTest {
         val id = UUID.randomUUID().toString()
         val status = AtomicInteger(200)
         val requests = AtomicInteger(0)
+        val payload = java.util.concurrent.atomic.AtomicReference<String?>(null)
         val server = ServerSocket(0, 10, InetAddress.getByName("127.0.0.1"))
         val responder = thread(isDaemon = true) {
             while (!server.isClosed) {
@@ -34,7 +35,7 @@ class SubscriptionWorkerTest {
                         val reader = socket.getInputStream().bufferedReader()
                         while (!reader.readLine().isNullOrEmpty()) { /* consume HTTP headers */ }
                         requests.incrementAndGet()
-                        val body = if (status.get() == 200)
+                        val body = payload.get() ?: if (status.get() == 200)
                             "vless://00000000-0000-4000-8000-000000000001@127.0.0.1:443?security=none&type=tcp#WorkerFixture"
                         else ""
                         val bytes = body.toByteArray()
@@ -69,6 +70,18 @@ class SubscriptionWorkerTest {
             assertEquals(updatedAt, MmkvManager.decodeSubscription(id)!!.lastUpdated)
             assertEquals(servers, MmkvManager.decodeServerList(id))
 
+            assertTrue(MmkvManager.decodeSubscription(id)!!.lastUpdateFailed)
+            status.set(200)
+            for (bad in listOf("", "<html>temporarily unavailable</html>",
+                "vless://00000000-0000-4000-8000-000000000002@127.0.0.1:443?security=none&type=tcp#This%20device%20is%20not%20supported")) {
+                payload.set(bad)
+                assertEquals(ListenableWorker.Result.retry(), worker().doWork())
+                assertEquals(servers, MmkvManager.decodeServerList(id))
+                assertEquals(updatedAt, MmkvManager.decodeSubscription(id)!!.lastUpdated)
+            }
+            payload.set(null)
+            assertEquals(ListenableWorker.Result.success(), worker().doWork())
+            assertFalse(MmkvManager.decodeSubscription(id)!!.lastUpdateFailed)
             MmkvManager.encodeSettings(key, false)
             val before = requests.get()
             assertEquals(ListenableWorker.Result.success(), worker().doWork())
