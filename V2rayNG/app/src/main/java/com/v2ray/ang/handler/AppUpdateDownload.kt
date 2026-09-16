@@ -83,7 +83,7 @@ internal object AppUpdateDownload {
         val id = manager(context).enqueue(request)
         try {
             write(context, JSONObject().put("id", id).put("version", update.latestVersion)
-                .put("notes", conciseReleaseNotes(update.releaseNotes)).put("wifiOnly", policy == AppUpdatePolicy.WIFI_ONLY).put("url", update.downloadUrl).put("hash", update.sha256).put("size", update.size).put("offered", false))
+                .put("wifiOnly", policy == AppUpdatePolicy.WIFI_ONLY).put("url", update.downloadUrl).put("hash", update.sha256).put("size", update.size).put("offered", false))
         } catch (error: Exception) { manager(context).remove(id); throw error }
     }
     suspend fun cancel(context: Context) = locked(context) {

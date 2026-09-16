@@ -74,22 +74,6 @@ fun FilvlessScreen(
     val context = LocalContext.current
     var settings by rememberSaveable { mutableStateOf(false) }
     var importing by rememberSaveable { mutableStateOf(false) }
-    var showWhatsNew by rememberSaveable {
-        mutableStateOf(runCatching {
-            val info = context.packageManager.getPackageInfo(context.packageName, 0)
-            info.lastUpdateTime > info.firstInstallTime &&
-                com.v2ray.ang.handler.MmkvManager.decodeSettingsString("filvless_whats_new_seen") != com.v2ray.ang.BuildConfig.VERSION_NAME
-        }.getOrDefault(false))
-    }
-    fun dismissWhatsNew() {
-        com.v2ray.ang.handler.MmkvManager.encodeSettings("filvless_whats_new_seen", com.v2ray.ang.BuildConfig.VERSION_NAME)
-        showWhatsNew = false
-    }
-    if (showWhatsNew && state.appUpdate == null) AlertDialog(onDismissRequest = { dismissWhatsNew() },
-        containerColor = Card,
-        title = { Text(stringResource(R.string.fv_whats_new_title, com.v2ray.ang.BuildConfig.VERSION_NAME)) },
-        text = { Text(stringResource(R.string.fv_whats_new_0611)) },
-        confirmButton = { TextButton(onClick = { dismissWhatsNew() }) { Text(stringResource(android.R.string.ok)) } })
     var subscriptionText by rememberSaveable { mutableStateOf("") }
     var languagePicker by rememberSaveable { mutableStateOf(false) }
     var fullServerName by rememberSaveable { mutableStateOf<String?>(null) }
@@ -136,11 +120,6 @@ fun FilvlessScreen(
             text = { Column(Modifier.verticalScroll(rememberScrollState())) {
                 Text(stringResource(R.string.fv_update_available_hint))
                 if (update.size > 0) Text(stringResource(R.string.fv_update_size, update.size / 1_000_000.0), Modifier.padding(top = 8.dp))
-                val notes = com.v2ray.ang.handler.conciseReleaseNotes(update.releaseNotes)
-                if (notes.isNotBlank()) {
-                    Text(stringResource(R.string.fv_update_changes), Modifier.padding(top = 12.dp), fontWeight = FontWeight.Bold)
-                    Text(notes, Modifier.padding(top = 6.dp), fontSize = 13.sp)
-                }
             } },
             confirmButton = { TextButton(onClick = {
                 dismissedUpdateVersion = update.latestVersion
@@ -253,13 +232,13 @@ fun FilvlessScreen(
             if (settings) {
                 item {
                     FilvlessSettingsContent(state, servers.isNotEmpty() || state.groups.any { it.id.isNotBlank() && it.id != AppConfig.DEFAULT_SUBSCRIPTION_ID }, servers.size,
-                        onLanguage = { feedback(); languagePicker = true },
-                        onSubscription = { feedback(); com.v2ray.ang.util.Utils.openUri(context, "https://t.me/filvless_bot") },
-                        onAbout = { feedback(); onNavigate(MainDestination.About) },
-                        onForget = { feedback(); forgetDialog = true },
-                        onDevices = { feedback(); onNavigate(MainDestination.Devices) },
-                        onHistory = { feedback(); onNavigate(MainDestination.History) },
-                        onAction = act)
+                        onLanguage = { languagePicker = true },
+                        onSubscription = { com.v2ray.ang.util.Utils.openUri(context, "https://t.me/filvless_bot") },
+                        onAbout = { onNavigate(MainDestination.About) },
+                        onForget = { forgetDialog = true },
+                        onDevices = { onNavigate(MainDestination.Devices) },
+                        onHistory = { onNavigate(MainDestination.History) },
+                        onAction = onAction)
                 }
             } else {
                 item {

@@ -102,16 +102,7 @@ fun CheckUpdateScreen(
         AlertDialog(
             onDismissRequest = { viewModel.dismissUpdateDialog() },
             title = { Text(stringResource(R.string.update_new_version_found, result.latestVersion ?: "")) },
-            text = {
-                val scrollState = rememberScrollState()
-                Text(
-                    text = result.releaseNotes.orEmpty(),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .verticalScroll(scrollState)
-                        .verticalScrollbar(scrollState)
-                )
-            },
+            text = { Text(stringResource(R.string.fv_update_available_hint)) },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.dismissUpdateDialog()

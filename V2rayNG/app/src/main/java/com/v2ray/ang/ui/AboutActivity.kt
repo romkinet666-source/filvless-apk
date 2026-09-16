@@ -35,7 +35,6 @@ class AboutActivity : BaseComponentActivity() {
 @Composable
 private fun FilvlessAboutScreen(onBack: () -> Unit) {
     val context = LocalContext.current
-    var showWhatsNew by remember { mutableStateOf(false) }
     val card = Color(0xFF1A1521)
     val violet = Color(0xFFB59AD8)
     Column(
@@ -67,18 +66,9 @@ private fun FilvlessAboutScreen(onBack: () -> Unit) {
         Column(Modifier.fillMaxWidth().background(card, RoundedCornerShape(24.dp)).padding(vertical = 4.dp)) {
             AboutRow(stringResource(R.string.fv_support)) { Utils.openUri(context, "https://t.me/Godfather099") }
             AboutRow(stringResource(R.string.fv_purchase_bot)) { Utils.openUri(context, "https://t.me/filvless_bot") }
-            AboutRow(stringResource(R.string.title_privacy_policy)) {
-                Utils.openUri(context, "https://github.com/romkinet666-source/filvless-apk/blob/main/PRIVACY.md")
-            }
-            AboutRow(stringResource(R.string.fv_whats_new)) { showWhatsNew = true }
-            AboutRow(stringResource(R.string.fv_source_code)) { Utils.openUri(context, AppConfig.APP_URL) }
         }
         Spacer(Modifier.height(24.dp))
     }
-    if (showWhatsNew) AlertDialog(onDismissRequest = { showWhatsNew = false }, containerColor = card,
-        title = { Text(stringResource(R.string.fv_whats_new_title, BuildConfig.VERSION_NAME), color = Color.White) },
-        text = { Text(stringResource(R.string.fv_whats_new_069), color = Color(0xFFB8B0C5), lineHeight = 22.sp) },
-        confirmButton = { TextButton(onClick = { showWhatsNew = false }) { Text(stringResource(android.R.string.ok)) } })
 }
 
 @Composable

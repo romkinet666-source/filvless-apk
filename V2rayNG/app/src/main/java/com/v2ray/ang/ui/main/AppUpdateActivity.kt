@@ -26,7 +26,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
 import com.v2ray.ang.handler.UpdateSnooze
-import com.v2ray.ang.handler.conciseReleaseNotes
 
 class AppUpdateActivity : BaseComponentActivity() {
     private var download by mutableStateOf(DownloadState("checking"))
@@ -119,11 +118,6 @@ class AppUpdateActivity : BaseComponentActivity() {
                 if (download.version.isNotBlank()) Text(download.version)
                 val size = download.size.takeIf { it > 0 } ?: details?.size ?: 0L
                 if (size > 0) Text(stringResource(R.string.fv_update_size, size / 1_000_000.0))
-                val notes = download.notes.ifBlank { conciseReleaseNotes(details?.releaseNotes) }
-                if (notes.isNotBlank()) {
-                    Text(stringResource(R.string.fv_update_changes), style = MaterialTheme.typography.titleMedium)
-                    Text(notes, style = MaterialTheme.typography.bodyMedium)
-                }
                 if (download.stage == "downloading" || download.stage == "waiting") {
                     LinearProgressIndicator(progress = { download.percent / 100f }, modifier = Modifier.fillMaxWidth())
                     Text("${download.percent}%")
