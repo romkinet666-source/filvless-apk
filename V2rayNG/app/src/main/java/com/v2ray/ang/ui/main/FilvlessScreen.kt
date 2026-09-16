@@ -13,7 +13,6 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.ui.semantics.selected
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -76,7 +75,6 @@ fun FilvlessScreen(
     var importing by rememberSaveable { mutableStateOf(false) }
     var subscriptionText by rememberSaveable { mutableStateOf("") }
     var languagePicker by rememberSaveable { mutableStateOf(false) }
-    var fullServerName by rememberSaveable { mutableStateOf<String?>(null) }
     var forgetDialog by rememberSaveable { mutableStateOf(false) }
     val view = LocalView.current
     val feedback: () -> Unit = { if (state.preferences.haptics) view.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK) }
@@ -275,9 +273,7 @@ fun FilvlessScreen(
                 }
                 items(if (providerDenied) emptyList() else servers, key = { it.guid }) { server ->
                     Row(Modifier.fillMaxWidth().background(if (state.selectedGuid == server.guid) Color(0xFF2A193A) else Color.Transparent, RoundedCornerShape(20.dp))
-                        .combinedClickable(role = Role.RadioButton, onClick = { act(MainAction.SelectServer(server.guid)) },
-                            onLongClickLabel = stringResource(R.string.fv_server_details),
-                            onLongClick = { feedback(); fullServerName = server.profile.remarks.take(2000) })
+                        .clickable(role = Role.RadioButton) { act(MainAction.SelectServer(server.guid)) }
                         .semantics { selected = state.selectedGuid == server.guid }
                         .padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
                         Box(Modifier.size(34.dp).background(Color(0xFF30203F), RoundedCornerShape(11.dp)), contentAlignment = Alignment.Center) {
@@ -310,10 +306,6 @@ fun FilvlessScreen(
         }
     }
     }
-    fullServerName?.let { name -> AlertDialog(onDismissRequest = { fullServerName = null }, containerColor = Card,
-        title = { Text(stringResource(R.string.fv_server_details)) },
-        text = { Text(name, Modifier.verticalScroll(rememberScrollState())) },
-        confirmButton = { TextButton(onClick = { fullServerName = null }) { Text(stringResource(R.string.fv_close)) } }) }
     if (languagePicker) AlertDialog(
         onDismissRequest = { languagePicker = false }, containerColor = Card,
         title = { Text(stringResource(R.string.title_language)) },
