@@ -42,12 +42,15 @@ object SubscriptionUpdater {
                 ExistingPeriodicWorkPolicy.KEEP
             }
 
+        val autoUpdate = MmkvManager.decodeSettingsBool("filvless_auto_update_subscriptions", false)
         MmkvManager.decodeSubscriptions()
             .filter { it.subscription.url.isNotEmpty() }
             .forEach { sub ->
-                sub.subscription.autoUpdate = MmkvManager.decodeSettingsBool("filvless_auto_update_subscriptions", false)
-                sub.subscription.updateInterval = 360
-                MmkvManager.encodeSubscription(sub.guid, sub.subscription)
+                if (sub.subscription.autoUpdate != autoUpdate || sub.subscription.updateInterval != 360L) {
+                    sub.subscription.autoUpdate = autoUpdate
+                    sub.subscription.updateInterval = 360
+                    MmkvManager.encodeSubscription(sub.guid, sub.subscription)
+                }
                 scheduleOne(
                     context = context,
                     subId = sub.guid,

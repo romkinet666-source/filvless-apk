@@ -1,6 +1,7 @@
 package com.v2ray.ang.handler
 
 import com.google.gson.JsonParser
+import com.v2ray.ang.util.awaitResponse
 import com.v2ray.ang.util.SubscriptionDevice
 import java.net.URI
 import java.util.concurrent.TimeUnit
@@ -56,7 +57,7 @@ internal object FilvlessDevices {
             require(deleteId.matches(Regex("[0-9a-f]{64}")))
             request.post("{\"deviceId\":\"$deleteId\"}".toRequestBody("application/json".toMediaType()))
         }
-        client.newCall(request.build()).execute().use { response ->
+        client.newCall(request.build()).awaitResponse { response ->
             val body = response.body ?: throw DeviceApiException("network")
             val source = body.source()
             source.request(1_048_577)

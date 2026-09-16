@@ -67,8 +67,8 @@ fun FilvlessScreen(
     val loading by mainViewModel.isLoading.collectAsStateWithLifecycle()
     val serverFlow = remember(state.selectedGroupId) { mainViewModel.serversForGroup(state.selectedGroupId) }
     val allServers by serverFlow.collectAsStateWithLifecycle()
-    val deniedGroups = allServers.filter { isUnsupportedDeviceNotice(it.profile.remarks) }.map { it.profile.subscriptionId }.toSet()
-    val servers = allServers.filter { it.profile.subscriptionId !in deniedGroups }
+    val deniedGroups = remember(allServers) { allServers.filter { isUnsupportedDeviceNotice(it.profile.remarks) }.map { it.profile.subscriptionId }.toSet() }
+    val servers = remember(allServers, deniedGroups) { allServers.filter { it.profile.subscriptionId !in deniedGroups } }
     val providerDenied = deniedGroups.isNotEmpty() && servers.isEmpty()
     val context = LocalContext.current
     var settings by rememberSaveable { mutableStateOf(false) }

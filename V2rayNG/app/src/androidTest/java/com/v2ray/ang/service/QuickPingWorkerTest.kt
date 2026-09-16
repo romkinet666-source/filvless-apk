@@ -14,6 +14,32 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
 class QuickPingWorkerTest {
+    @Test fun cancelledBatchCannotStart() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val events = java.util.concurrent.atomic.AtomicInteger()
+        val worker = RealPingWorkerService(context, listOf("missing-profile"), onlyTcp = true) { events.incrementAndGet() }
+        worker.cancel()
+        worker.start()
+        Thread.sleep(100)
+        assertEquals(0, events.get())
+    }
+
+    @Test fun repeatedStartDoesNotDuplicateResults() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val results = java.util.concurrent.atomic.AtomicInteger()
+        val finished = CountDownLatch(1)
+        val worker = RealPingWorkerService(context, listOf("missing-profile"), onlyTcp = true) {
+            if (it is RealPingEvent.Result) results.incrementAndGet()
+            if (it is RealPingEvent.Finish) finished.countDown()
+        }
+        try {
+            worker.start()
+            worker.start()
+            assertTrue(finished.await(3, TimeUnit.SECONDS))
+            assertEquals(1, results.get())
+        } finally { worker.cancel() }
+    }
+
     @Test fun measuresFourteenCustomProfilesWithoutStartingXray() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val guids = mutableListOf<String>()

@@ -14,13 +14,13 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 
 internal object RealPingExecutionLimiter {
@@ -40,7 +40,7 @@ internal object RealPingExecutionLimiter {
 
 /**
  * Worker that runs a batch of real-ping tests independently.
- * Each batch owns its own CoroutineScope/dispatcher and can be cancelled separately.
+ * Each batch owns its scope; bounded IO dispatchers reuse threads across batches.
  */
 class RealPingWorkerService(
     private val context: Context,
@@ -50,15 +50,20 @@ class RealPingWorkerService(
 ) {
     private val job = SupervisorJob()
     private val concurrency = SettingsManager.getRealPingConcurrency()
-    private val dispatcher = Executors.newFixedThreadPool(if (onlyTcp) 16 else concurrency).asCoroutineDispatcher()
+    private val dispatcher = if (onlyTcp) tcpDispatcher else Dispatchers.IO.limitedParallelism(concurrency)
     private val scope = CoroutineScope(job + dispatcher + CoroutineName("RealPingBatchWorker"))
 
     private val runningCount = AtomicInteger(0)
-    private val totalCount = AtomicInteger(0)
+    private val totalCount = AtomicInteger(guids.size)
+    private val started = AtomicBoolean(false)
+
+    private companion object {
+        val tcpDispatcher = Dispatchers.IO.limitedParallelism(16)
+    }
 
     fun start() {
+        if (!started.compareAndSet(false, true) || !job.isActive) return
         val jobs = guids.map { guid ->
-            totalCount.incrementAndGet()
             scope.launch {
                 runningCount.incrementAndGet()
                 try {
@@ -66,8 +71,10 @@ class RealPingWorkerService(
                     if (scope.isActive) {
                         onEvent(RealPingEvent.Result(guid, result))
                     }
-                } catch (_: Throwable) {
-                    // ignore
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    if (scope.isActive) onEvent(RealPingEvent.Result(guid, -1L))
                 } finally {
                     val count = totalCount.decrementAndGet()
                     val left = runningCount.decrementAndGet()
@@ -87,21 +94,13 @@ class RealPingWorkerService(
             } catch (_: CancellationException) {
                 // If cancelled, don't send finish event to avoid confusion
             } finally {
-                close()
+                job.cancel()
             }
         }
     }
 
     fun cancel() {
         job.cancel()
-    }
-
-    private fun close() {
-        try {
-            dispatcher.close()
-        } catch (_: Throwable) {
-            // ignore
-        }
     }
 
     private suspend fun startRealPing(guid: String): Long {
