@@ -88,7 +88,7 @@ fun FilvlessScreen(
     if (showWhatsNew && state.appUpdate == null) AlertDialog(onDismissRequest = { dismissWhatsNew() },
         containerColor = Card,
         title = { Text(stringResource(R.string.fv_whats_new_title, com.v2ray.ang.BuildConfig.VERSION_NAME)) },
-        text = { Text(stringResource(R.string.fv_whats_new_0610)) },
+        text = { Text(stringResource(R.string.fv_whats_new_0611)) },
         confirmButton = { TextButton(onClick = { dismissWhatsNew() }) { Text(stringResource(android.R.string.ok)) } })
     var subscriptionText by rememberSaveable { mutableStateOf("") }
     var languagePicker by rememberSaveable { mutableStateOf(false) }
@@ -262,24 +262,6 @@ fun FilvlessScreen(
                         onAction = act)
                 }
             } else {
-                if (state.subscriptionExpiresAt != null || state.subscriptionUpdateFailed) item {
-                    val expired = state.subscriptionExpiresAt?.let { it * 1000L < System.currentTimeMillis() } == true
-                    Column(Modifier.fillMaxWidth().background(Card, RoundedCornerShape(18.dp)).padding(14.dp)) {
-                        Text(stringResource(R.string.fv_subscription), color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-                        val label = when {
-                            expired -> stringResource(R.string.fv_expired_date, java.text.DateFormat.getDateInstance(java.text.DateFormat.LONG).format(java.util.Date(requireNotNull(state.subscriptionExpiresAt) * 1000)))
-                            state.subscriptionExpiresAt != null -> stringResource(R.string.fv_active_date, java.text.DateFormat.getDateInstance(java.text.DateFormat.LONG).format(java.util.Date(requireNotNull(state.subscriptionExpiresAt) * 1000)))
-                            else -> stringResource(R.string.fv_sub_kept)
-                        }
-                        Text(label, Modifier.padding(top = 4.dp), color = if (expired || state.subscriptionUpdateFailed) Color(0xFFE5BA82) else Muted, fontSize = 13.sp)
-                        if (state.subscriptionUpdatedAt > 0) Text(stringResource(R.string.fv_last_updated,
-                            java.text.DateFormat.getDateTimeInstance(java.text.DateFormat.SHORT, java.text.DateFormat.SHORT).format(java.util.Date(state.subscriptionUpdatedAt))),
-                            Modifier.padding(top = 3.dp), color = Muted, fontSize = 11.sp)
-                        TextButton(onClick = { com.v2ray.ang.util.Utils.openUri(context, "https://t.me/filvless_bot") }, contentPadding = PaddingValues(top = 5.dp)) {
-                            Text(stringResource(if (expired) R.string.fv_buy_subscription else R.string.fv_purchase_bot), color = Violet)
-                        }
-                    }
-                }
                 item {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         Text(stringResource(R.string.fv_servers), Modifier.weight(1f), color = Color.White, fontSize = 21.sp, fontWeight = FontWeight.SemiBold)

@@ -13,9 +13,10 @@ class SubscriptionReminderTest {
         assertTrue(expiryReminderDue(now + 259_200, now, 0))
         assertTrue(expiryReminderDue(now + 1, now, 0))
     }
-    @Test fun renewalGetsItsOwnReminderButRepeatedChecksDoNot() {
+    @Test fun remindsOncePerDayDuringTheThreeDayWindow() {
         val expiry = now + 259_200
-        assertFalse(expiryReminderDue(expiry, now, expiry))
-        assertTrue(expiryReminderDue(expiry + 86_400, now + 86_400, expiry))
+        val today = now / 86_400
+        assertFalse(expiryReminderDue(expiry, now, today))
+        assertTrue(expiryReminderDue(expiry, now + 86_400, today))
     }
 }

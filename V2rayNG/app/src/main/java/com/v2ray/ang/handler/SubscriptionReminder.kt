@@ -18,8 +18,13 @@ import java.text.DateFormat
 import java.util.Date
 import java.util.concurrent.TimeUnit
 
-internal fun expiryReminderDue(expiry: Long?, now: Long, notifiedExpiry: Long): Boolean =
-    expiry != null && expiry > now && expiry - now <= 3 * 86_400L && expiry != notifiedExpiry
+/**
+ * The user should receive one reminder on each calendar day in the final three
+ * days. Persisting the day, rather than the expiry timestamp, also means that a
+ * renewed subscription starts a fresh reminder cycle naturally.
+ */
+internal fun expiryReminderDue(expiry: Long?, now: Long, notifiedDay: Long): Boolean =
+    expiry != null && expiry > now && expiry - now <= 3 * 86_400L && now / 86_400L != notifiedDay
 
 object SubscriptionReminder {
     const val KEY = "filvless_expiry_reminder"
@@ -34,7 +39,7 @@ object SubscriptionReminder {
             return
         }
         work.enqueueUniquePeriodicWork(WORK, if (replace) ExistingPeriodicWorkPolicy.REPLACE else ExistingPeriodicWorkPolicy.KEEP,
-            PeriodicWorkRequestBuilder<ReminderWorker>(6, TimeUnit.HOURS).build())
+            PeriodicWorkRequestBuilder<ReminderWorker>(24, TimeUnit.HOURS).build())
     }
     class ReminderWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
         override suspend fun doWork(): Result {
@@ -68,7 +73,7 @@ object SubscriptionReminder {
                 if (isStopped || !MmkvManager.decodeSettingsBool(KEY, true)) return@forEach
                 try {
                     manager.notify(TAG, sub.guid.hashCode(), notification)
-                    MmkvManager.encodeSettings(key, expiry.toString())
+                    MmkvManager.encodeSettings(key, (now / 86_400L).toString())
                 } catch (_: SecurityException) { /* Do not mark delivered when Android denies notifications. */ }
             }
             return Result.success()

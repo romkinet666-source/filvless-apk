@@ -6,6 +6,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -44,10 +45,21 @@ class DiagnosticsActivity : BaseComponentActivity() {
                 Text(stringResource(R.string.fv_connection_diagnostics_hint), style = MaterialTheme.typography.bodySmall)
                 val titles = listOf(R.string.fv_diag_network, R.string.fv_subscription, R.string.fv_diag_server, R.string.fv_diag_tunnel)
                 steps.forEach { step ->
-                    Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(14.dp)) {
+                    val status = diagnosticStatus(step.result)
+                    val cardColor = when (status) {
+                        DiagnosticStatus.GOOD -> Color(0xFF183A2A)
+                        DiagnosticStatus.BAD -> Color(0xFF481D29)
+                        DiagnosticStatus.NEUTRAL -> MaterialTheme.colorScheme.surfaceVariant
+                    }
+                    val accent = when (status) {
+                        DiagnosticStatus.GOOD -> Color(0xFF7FE1A7)
+                        DiagnosticStatus.BAD -> Color(0xFFFFA6B4)
+                        DiagnosticStatus.NEUTRAL -> MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+                    Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = cardColor)) { Column(Modifier.padding(14.dp)) {
                         Text(stringResource(titles[step.step]), style = MaterialTheme.typography.titleSmall)
                         Spacer(Modifier.height(5.dp))
-                        Text(stringResource(diagnosticText(step.result)), style = MaterialTheme.typography.bodyMedium)
+                        Text(stringResource(diagnosticText(step.result)), style = MaterialTheme.typography.bodyMedium, color = accent)
                     } }
                 }
                 if (running) { CircularProgressIndicator(Modifier.size(24.dp)); Text(stringResource(R.string.fv_health_checking)) }
@@ -71,6 +83,17 @@ class DiagnosticsActivity : BaseComponentActivity() {
             }
         }
     }
+}
+
+private enum class DiagnosticStatus { GOOD, BAD, NEUTRAL }
+
+private fun diagnosticStatus(result: DiagnosticResult): DiagnosticStatus = when (result) {
+    DiagnosticResult.NETWORK_OK, DiagnosticResult.SUBSCRIPTION_OK, DiagnosticResult.SERVER_OK, DiagnosticResult.VPN_OK -> DiagnosticStatus.GOOD
+    DiagnosticResult.NO_NETWORK, DiagnosticResult.SUBSCRIPTION_DENIED, DiagnosticResult.SUBSCRIPTION_UNREACHABLE,
+    DiagnosticResult.EXPIRED, DiagnosticResult.EXPIRY_CACHED, DiagnosticResult.SERVER_UNREACHABLE,
+    DiagnosticResult.VPN_UNREACHABLE -> DiagnosticStatus.BAD
+    DiagnosticResult.NO_PROFILE, DiagnosticResult.NO_SUBSCRIPTION, DiagnosticResult.SUBSCRIPTION_REDIRECT,
+    DiagnosticResult.SERVER_NOT_TESTED, DiagnosticResult.VPN_OFF -> DiagnosticStatus.NEUTRAL
 }
 
 internal fun diagnosticText(result: DiagnosticResult): Int = when (result) {
