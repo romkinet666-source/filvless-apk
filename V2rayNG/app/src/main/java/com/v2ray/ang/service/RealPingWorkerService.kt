@@ -14,6 +14,9 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.joinAll
@@ -131,13 +134,20 @@ class RealPingWorkerService(
         }
     }
 
-    private fun startTcping(guid: String): Long {
+    private suspend fun startTcping(guid: String): Long {
         val retFailure = -1L
 
         val config = MmkvManager.decodeServerConfig(guid) ?: return retFailure
         if (config.configType == EConfigType.CUSTOM) {
-            val target = quickPingTarget(MmkvManager.decodeServerRaw(guid)) ?: return retFailure
-            return SpeedtestManager.socketConnectTime(target.first, target.second, 1000)
+            val targets = quickPingTargets(MmkvManager.decodeServerRaw(guid)).take(8)
+            if (targets.isEmpty()) return retFailure
+            return coroutineScope {
+                targets.map { target ->
+                    async(Dispatchers.IO) {
+                        SpeedtestManager.socketConnectTime(target.first, target.second, 2_000)
+                    }
+                }.awaitAll().filter { it >= 0L }.minOrNull() ?: retFailure
+            }
         }
         if (!config.configType.isComplexType()
             && config.configType != EConfigType.HYSTERIA2
@@ -148,7 +158,7 @@ class RealPingWorkerService(
         ) {
             val url = config.server.orEmpty()
             val port = config.serverPort.orEmpty().toInt()
-            val tcpTime = SpeedtestManager.socketConnectTime(url, port, 1000)
+            val tcpTime = SpeedtestManager.socketConnectTime(url, port, 2_000)
 
             return tcpTime
         }

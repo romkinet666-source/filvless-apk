@@ -8,11 +8,11 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.ui.draw.rotate
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.semantics.selected
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -254,10 +254,14 @@ fun FilvlessScreen(
                             enabled = servers.isNotEmpty() && !providerDenied && !state.isTesting && !loading) {
                             if (state.isTesting) {
                                 val transition = rememberInfiniteTransition(label = "pingCheck")
-                                val angle by transition.animateFloat(0f, 360f,
-                                    infiniteRepeatable(tween(900, easing = LinearEasing)), label = "pingRotation")
+                                val pulse by transition.animateFloat(.78f, 1.12f,
+                                    infiniteRepeatable(tween(520), RepeatMode.Reverse), label = "pingPulse")
                                 Icon(painterResource(R.drawable.fv_ping), stringResource(R.string.fv_test),
-                                    Modifier.size(24.dp).rotate(angle), tint = Violet)
+                                    Modifier.size(24.dp).graphicsLayer {
+                                        scaleX = pulse
+                                        scaleY = pulse
+                                        alpha = .55f + (pulse - .78f)
+                                    }, tint = Violet)
                             } else Icon(painterResource(R.drawable.fv_ping), stringResource(R.string.fv_test),
                                 tint = if (servers.isNotEmpty() && !loading) Violet else Muted.copy(alpha = .4f))
                         }
@@ -281,7 +285,11 @@ fun FilvlessScreen(
                 }
                 items(if (providerDenied) emptyList() else servers, key = { it.guid }) { server ->
                     Row(Modifier.fillMaxWidth().background(if (state.selectedGuid == server.guid) Color(0xFF2A193A) else Color.Transparent, RoundedCornerShape(20.dp))
-                        .clickable(role = Role.RadioButton) { act(MainAction.SelectServer(server.guid)) }
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            role = Role.RadioButton,
+                        ) { act(MainAction.SelectServer(server.guid)) }
                         .semantics { selected = state.selectedGuid == server.guid }
                         .padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
                         Box(Modifier.size(34.dp).background(Color(0xFF30203F), RoundedCornerShape(11.dp)), contentAlignment = Alignment.Center) {

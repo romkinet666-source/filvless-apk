@@ -14,8 +14,8 @@ android {
         resValue("string", "filvless_package_id", "ru.filvless.vpn")
         minSdk = 24
         targetSdk = 37
-        versionCode = 21
-        versionName = "0.6.14-preview"
+        versionCode = 22
+        versionName = "0.6.15-preview"
 
         // One installer containing every supported native architecture.
         splits.abi.isEnable = false
