@@ -437,6 +437,9 @@ class MainViewModel(
             try {
                 val result = com.v2ray.ang.handler.UpdateCheckerManager.checkForUpdate(true)
                 _uiState.update { it.copy(appUpdate = result.takeIf { result.hasUpdate }) }
+                try { com.v2ray.ang.handler.AppUpdateDownload.enqueue(getApplication(), result) }
+                catch (cancelled: CancellationException) { throw cancelled }
+                catch (_: Exception) { /* Update screen provides retry without blocking VPN startup. */ }
                 if (manual && !result.hasUpdate) toast(dataSource.getString(R.string.update_already_latest_version))
             } catch (cancelled: kotlinx.coroutines.CancellationException) {
                 throw cancelled

@@ -77,7 +77,14 @@
     <string name="fv_save">Save</string>
     <string name="fv_check_update">Check for app updates</string>
     <string name="fv_update_available">Filvless %1$s is available</string>
-    <string name="fv_download_update">Download</string>
+    <string name="fv_download_update">Update</string>
     <string name="fv_buy_subscription">Buy or renew</string>
-    <string name="fv_update_prompt">A new version is available. Download the update and install it over your current app.</string>
+    <string name="fv_update_prompt">The new version downloads in the background. Installation will be offered next time you open the app.</string>
+    <string name="fv_update_downloading">Downloading update</string>
+    <string name="fv_update_ready">The update is ready to install.</string>
+    <string name="fv_update_failed">Could not download or verify the update. Check your connection and free storage, then retry.</string>
+    <string name="fv_update_background_hint">You can close this screen. Downloading continues in the background; installation will open on your next visit.</string>
+    <string name="fv_update_permission">Allow Filvless to install updates. Android will still ask you to confirm each installation.</string>
+    <string name="fv_update_allow">Allow installation</string>
+    <string name="fv_update_install">Install update</string>
 </resources>

@@ -21,8 +21,9 @@ object UpdateCheckerManager {
             ?: return@withContext CheckUpdateResult(false)
         if (compareReleaseVersions(release.tagName, BuildConfig.VERSION_NAME) <= 0)
             return@withContext CheckUpdateResult(false)
+        val asset = release.assets.first { it.browserDownloadUrl == universalDownloadUrl(release) }
         CheckUpdateResult(true, release.tagName.removePrefix("v"), release.body,
-            universalDownloadUrl(release), isPreRelease = release.prerelease)
+            universalDownloadUrl(release), isPreRelease = release.prerelease, sha256 = asset.digest?.removePrefix("sha256:"), size = asset.size)
     }
 }
 

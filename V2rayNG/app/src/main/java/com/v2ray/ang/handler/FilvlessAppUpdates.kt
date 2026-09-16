@@ -35,6 +35,8 @@ object FilvlessAppUpdates {
         override suspend fun doWork(): Result {
             return try {
                 val update = UpdateCheckerManager.checkForUpdate(true)
+                AppUpdateDownload.cleanup(applicationContext)
+                AppUpdateDownload.enqueue(applicationContext, update)
                 val version = update.latestVersion
                 if (!update.hasUpdate || version == null || MmkvManager.decodeSettingsString("filvless_notified_version") == version)
                     return Result.success()

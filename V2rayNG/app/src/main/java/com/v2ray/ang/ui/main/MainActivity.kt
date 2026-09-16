@@ -109,6 +109,21 @@ class MainActivity : HelperBaseComponentActivity() {
         }
     }
 
+    override fun onStart() {
+        super.onStart()
+        lifecycleScope.launch {
+            try {
+                com.v2ray.ang.handler.AppUpdateDownload.cleanup(this@MainActivity)
+                if (com.v2ray.ang.handler.AppUpdateDownload.claimAutomaticInstall(this@MainActivity)) {
+                    lifecycle.withResumed {
+                        startActivity(Intent(this@MainActivity, AppUpdateActivity::class.java).putExtra("automatic", true))
+                    }
+                }
+            } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+            catch (_: Exception) { /* Manual updater remains available. */ }
+        }
+    }
+
     override fun onResume() {
         super.onResume()
         mainViewModel.checkAppUpdateOnResume()

@@ -77,7 +77,14 @@
     <string name="fv_save">Сохранить</string>
     <string name="fv_check_update">Обновление приложения</string>
     <string name="fv_update_available">Доступна Filvless %1$s</string>
-    <string name="fv_download_update">Скачать</string>
+    <string name="fv_download_update">Обновление</string>
     <string name="fv_buy_subscription">Купить или продлить</string>
-    <string name="fv_update_prompt">Доступна новая версия. Скачайте обновление и установите его поверх текущего приложения.</string>
+    <string name="fv_update_prompt">Новая версия скачивается в фоне. При следующем открытии приложения будет предложена установка.</string>
+    <string name="fv_update_downloading">Обновление скачивается</string>
+    <string name="fv_update_ready">Обновление готово к установке.</string>
+    <string name="fv_update_failed">Не удалось скачать или проверить обновление. Проверьте интернет и свободное место, затем повторите попытку.</string>
+    <string name="fv_update_background_hint">Можно закрыть этот экран. Загрузка продолжится в фоне; установка откроется при следующем входе.</string>
+    <string name="fv_update_permission">Разрешите Filvless устанавливать обновления. Каждую установку нужно подтвердить в Android.</string>
+    <string name="fv_update_allow">Разрешить установку</string>
+    <string name="fv_update_install">Установить обновление</string>
 </resources>

@@ -6,5 +6,7 @@ data class CheckUpdateResult(
     val releaseNotes: String? = null,
     val downloadUrl: String? = null,
     val error: String? = null,
-    val isPreRelease: Boolean = false
+    val isPreRelease: Boolean = false,
+    val sha256: String? = null,
+    val size: Long = 0
 )

@@ -4,6 +4,7 @@
     tools:ignore="MissingLeanbackLauncher">
 
     <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <supports-screens
         android:anyDensity="true"
@@ -367,6 +368,10 @@
                 android:resource="@xml/cache_paths" />
         </provider>
 
+        <activity android:name=".ui.main.AppUpdateActivity" android:exported="false" />
+        <receiver android:name=".receiver.AppUpdatedReceiver" android:exported="false">
+            <intent-filter><action android:name="android.intent.action.MY_PACKAGE_REPLACED" /></intent-filter>
+        </receiver>
     </application>
 
 </manifest>

@@ -113,7 +113,7 @@ fun FilvlessScreen(
             text = { Text(stringResource(R.string.fv_update_prompt)) },
             confirmButton = { TextButton(onClick = {
                 dismissedUpdateVersion = update.latestVersion
-                update.downloadUrl?.let { com.v2ray.ang.util.Utils.openUri(context, it) }
+                context.startActivity(android.content.Intent(context, AppUpdateActivity::class.java))
             }) { Text(stringResource(R.string.fv_download_update)) } },
             dismissButton = { TextButton(onClick = { dismissedUpdateVersion = update.latestVersion }) {
                 Text(stringResource(R.string.fv_close))
@@ -146,7 +146,7 @@ fun FilvlessScreen(
                 Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp).background(Card, RoundedCornerShape(16.dp)).padding(horizontal = 12.dp),
                     verticalAlignment = Alignment.CenterVertically) {
                     Text(stringResource(R.string.fv_update_available, update.latestVersion.orEmpty()), Modifier.weight(1f), color = Color.White, fontSize = 14.sp)
-                    TextButton(onClick = { update.downloadUrl?.let { com.v2ray.ang.util.Utils.openUri(context, it) } }) {
+                    TextButton(onClick = { context.startActivity(android.content.Intent(context, AppUpdateActivity::class.java)) }) {
                         Text(stringResource(R.string.fv_download_update), color = Violet)
                     }
                 }

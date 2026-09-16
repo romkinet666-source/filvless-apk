@@ -115,7 +115,7 @@ fun CheckUpdateScreen(
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.dismissUpdateDialog()
-                    result.downloadUrl?.let { Utils.openUri(context, it) }
+                    context.startActivity(android.content.Intent(context, com.v2ray.ang.ui.main.AppUpdateActivity::class.java))
                 }) {
                     Text(stringResource(R.string.update_now))
                 }
