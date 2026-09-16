@@ -5,6 +5,7 @@ data class FilvlessPreferences(
     val haptics: Boolean = true,
     val visualEffects: Boolean = true,
     val autoUpdateSubscriptions: Boolean = false,
+    val updateDownloadPolicy: com.v2ray.ang.handler.AppUpdatePolicy = com.v2ray.ang.handler.AppUpdatePolicy.ANY_NETWORK,
     val language: String = "auto",
 )
 

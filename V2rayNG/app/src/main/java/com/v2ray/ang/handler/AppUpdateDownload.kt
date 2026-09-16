@@ -52,7 +52,9 @@ internal object AppUpdateDownload {
         val state = read(context)
         if (state != null && compareReleaseVersions(BuildConfig.VERSION_NAME, state.optString("version")) >= 0) clear(context, state)
     }
-    suspend fun enqueue(context: Context, update: CheckUpdateResult, retry: Boolean = false) = locked(context) {
+    suspend fun enqueue(context: Context, update: CheckUpdateResult, retry: Boolean = false, userRequested: Boolean = false) = locked(context) {
+        val policy = AppUpdatePolicy.read()
+        if (!policy.allowsDownload(userRequested)) return@locked
         if (!update.hasUpdate || compareReleaseVersions(update.latestVersion.orEmpty(), BuildConfig.VERSION_NAME) <= 0) return@locked
         require(validUpdateDownload(update.downloadUrl, update.sha256, update.size))
         val previous = read(context)
@@ -70,11 +72,31 @@ internal object AppUpdateDownload {
             .setAllowedOverRoaming(false)
             .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
             .setDestinationInExternalFilesDir(context, null, "updates/update.apk")
+        if (policy == AppUpdatePolicy.WIFI_ONLY) request.setAllowedNetworkTypes(DownloadManager.Request.NETWORK_WIFI)
         val id = manager(context).enqueue(request)
         try {
             write(context, JSONObject().put("id", id).put("version", update.latestVersion)
-                .put("hash", update.sha256).put("size", update.size).put("offered", false))
+                .put("url", update.downloadUrl).put("hash", update.sha256).put("size", update.size).put("offered", false))
         } catch (error: Exception) { manager(context).remove(id); throw error }
+    }
+    suspend fun setPolicy(context: Context, policy: AppUpdatePolicy) {
+        val pending = locked(context) {
+            check(MmkvManager.encodeSettings(AppUpdatePolicy.KEY, policy.storageValue))
+            val state = read(context) ?: return@locked null
+            val complete = manager(context).query(DownloadManager.Query().setFilterById(state.optLong("id"))).use {
+                it != null && it.moveToFirst() && it.getInt(it.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS)) == DownloadManager.STATUS_SUCCESSFUL
+            }
+            // A verified/finished package needs no network and remains available for installation.
+            if (complete) return@locked null
+            val version = state.optString("version")
+            val update = CheckUpdateResult(hasUpdate = true, latestVersion = version,
+                downloadUrl = state.optString("url").ifBlank {
+                    "https://github.com/romkinet666-source/filvless-apk/releases/download/v$version/Filvless-$version-universal.apk"
+                }, sha256 = state.optString("hash"), size = state.optLong("size"))
+            clear(context, state)
+            update.takeIf { validUpdateDownload(it.downloadUrl, it.sha256, it.size) }
+        }
+        if (pending != null) enqueue(context, pending)
     }
     suspend fun status(context: Context): DownloadState = locked(context) {
         val state = read(context) ?: return@locked DownloadState("none")
@@ -93,7 +115,9 @@ internal object AppUpdateDownload {
                 DownloadManager.STATUS_FAILED -> DownloadState("failed", version)
                 else -> {
                     val bytes = cursor.getLong(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR))
-                    DownloadState("downloading", version, ((bytes * 100) / state.getLong("size")).toInt().coerceIn(0, 99))
+                    val waiting = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS)) == DownloadManager.STATUS_PAUSED &&
+                        cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON)) in listOf(DownloadManager.PAUSED_WAITING_FOR_NETWORK, DownloadManager.PAUSED_QUEUED_FOR_WIFI)
+                    DownloadState(if (waiting) "waiting" else "downloading", version, ((bytes * 100) / state.getLong("size")).toInt().coerceIn(0, 99))
                 }
             }
         }

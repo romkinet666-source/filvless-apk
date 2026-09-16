@@ -20,21 +20,25 @@ import kotlinx.coroutines.launch
  * is still connected, so the socket to the server is never reset and the core keeps using a dead
  * connection. Deciding that a handover happened is what this class is for, acting on it is not.
  *
- * Only used from Android P and above, see CoreServiceManager.startNetworkMonitor().
+ * Uses the physical INTERNET network and ignores the VPN interface.
  * [onHandover] is invoked on a background thread after the debounce window and may block.
  */
 class NetworkMonitor(
     private val connectivity: ConnectivityManager,
     private val onUnderlyingNetworksChanged: (Array<Network>?) -> Unit,
-    private val onHandover: () -> Unit,
+    private val onHandover: () -> Boolean,
+    private val onRecoveryFailed: () -> Unit,
+    private val onNetworkLost: () -> Unit,
+    private val onInitialNetwork: () -> Unit,
 ) {
     private companion object {
         const val HANDOVER_DEBOUNCE_MS = 1000L
     }
 
-    private var upstream: Network? = null
+    private val upstream = UpstreamTracker<Network>()
+    val hasNetwork: Boolean get() = upstream.current != null
     private var handoverJob: Job? = null
-    private var registered = false
+    @Volatile private var registered = false
 
     /**
      * Unfortunately registerDefaultNetworkCallback is going to return our VPN interface:
@@ -48,6 +52,7 @@ class NetworkMonitor(
      */
     private val request by lazy {
         NetworkRequest.Builder()
+            .addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)
             .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
             .addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED)
             .build()
@@ -55,21 +60,23 @@ class NetworkMonitor(
 
     private val callback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
-            val previous = upstream
-            upstream = network
+            if (!registered) return
+            val firstAvailable = upstream.current == null
+            val recover = upstream.available(network)
             onUnderlyingNetworksChanged(arrayOf(network))
-            if (previous != null && previous != network) {
-                scheduleHandover(network)
-            }
+            if (recover) scheduleHandover(network)
+            else if (firstAvailable) onInitialNetwork()
         }
 
         override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
-            // it's a good idea to refresh capabilities
-            onUnderlyingNetworksChanged(arrayOf(network))
+            if (registered && upstream.current == network) onUnderlyingNetworksChanged(arrayOf(network))
         }
 
         override fun onLost(network: Network) {
-            onUnderlyingNetworksChanged(null)
+            if (!registered || !upstream.lost(network)) return
+            handoverJob?.cancel()
+            onUnderlyingNetworksChanged(emptyArray())
+            onNetworkLost()
         }
     }
 
@@ -79,9 +86,10 @@ class NetworkMonitor(
     fun register() {
         if (registered) return
         try {
-            connectivity.requestNetwork(request, callback)
             registered = true
+            connectivity.requestNetwork(request, callback)
         } catch (e: Exception) {
+            registered = false
             LogUtil.e(AppConfig.TAG, "NetworkMonitor: Failed to request network", e)
         }
     }
@@ -90,11 +98,12 @@ class NetworkMonitor(
      * Stops watching and drops the tracked state. Safe to call more than once.
      */
     fun unregister() {
+        val wasRegistered = registered
+        registered = false
         handoverJob?.cancel()
         handoverJob = null
-        upstream = null
-        if (!registered) return
-        registered = false
+        upstream.reset()
+        if (!wasRegistered) return
         try {
             connectivity.unregisterNetworkCallback(callback)
         } catch (e: Exception) {
@@ -107,8 +116,12 @@ class NetworkMonitor(
         handoverJob?.cancel()
         handoverJob = CoroutineScope(Dispatchers.IO).launch {
             try {
-                delay(HANDOVER_DEBOUNCE_MS)
-                onHandover()
+                repeat(3) { attempt ->
+                    delay(HANDOVER_DEBOUNCE_MS * (1L shl attempt))
+                    if (!registered || upstream.current != network) return@launch
+                    if (onHandover()) return@launch
+                }
+                if (registered && upstream.current == network) onRecoveryFailed()
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

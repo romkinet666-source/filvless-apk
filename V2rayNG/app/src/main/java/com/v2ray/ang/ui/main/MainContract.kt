@@ -25,6 +25,7 @@ data class MainUiState(
     val checkingAppUpdate: Boolean = false,
     val preferences: FilvlessPreferences = FilvlessPreferences(),
     val preferencesLoaded: Boolean = false,
+    val connectionHealth: com.v2ray.ang.service.ConnectionHealth = com.v2ray.ang.service.ConnectionHealth.IDLE,
     val connectionPending: Boolean = false,
     val connectionFailed: Boolean = false,
     val subscriptionExpiresAt: Long? = null,
@@ -46,6 +47,7 @@ data class MainUiState(
  * All possible user interaction intents
  */
 sealed interface MainAction {
+    data class SetUpdateDownloadPolicy(val policy: com.v2ray.ang.handler.AppUpdatePolicy) : MainAction
     data class SetPreference(val key: FilvlessPreference, val enabled: Boolean) : MainAction
     data class SetLanguage(val code: String) : MainAction
     data object ForgetSubscriptions : MainAction

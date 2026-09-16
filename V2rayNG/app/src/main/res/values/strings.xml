@@ -557,4 +557,17 @@
     <string name="connection_test_empty_message">no details available</string>
     <string name="value_unknown">unknown</string>
 
+    <string name="fv_health_checking">Checking connection</string>
+    <string name="fv_health_unreachable">Connection not verified</string>
+    <string name="fv_health_waiting">Waiting for network</string>
+    <string name="fv_health_recovering">Reconnecting</string>
+    <string name="fv_health_verified">Internet connection verified</string>
+    <string name="fv_health_retry_hint">Try another server or reconnect</string>
+    <string name="fv_update_download_policy">Background downloads</string>
+    <string name="fv_update_wifi">Wi-Fi only</string>
+    <string name="fv_update_any">Any network</string>
+    <string name="fv_update_manual">Manually</string>
+    <string name="fv_update_policy_hint">New version notifications stay enabled in every mode. Roaming downloads are disabled. Changing the mode restarts an unfinished download.</string>
+    <string name="fv_update_waiting_network">Waiting for an allowed network</string>
+    <string name="fv_update_available_hint">Open the update screen to download or install this version. Background downloads follow your settings.</string>
 </resources>

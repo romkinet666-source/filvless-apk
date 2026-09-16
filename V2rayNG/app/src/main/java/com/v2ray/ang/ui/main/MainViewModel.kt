@@ -133,6 +133,9 @@ class MainViewModel(
 
     private fun handleServiceEvent(event: MainServiceEvent) {
         when (event) {
+            is MainServiceEvent.HealthChanged -> {
+                if (uiState.value.isRunning) _uiState.update { it.copy(connectionHealth = event.health) }
+            }
             MainServiceEvent.SubscriptionsUpdated -> setupGroupTab(forceRefresh = true)
             MainServiceEvent.StateRunning -> updateRunningState(true, clearTestingText = false)
             MainServiceEvent.StateNotRunning -> updateRunningState(false, clearTestingText = false)
@@ -278,6 +281,15 @@ class MainViewModel(
     // ---------- Action handler ----------
     fun onAction(action: MainAction) {
         when (action) {
+            is MainAction.SetUpdateDownloadPolicy -> viewModelScope.launch(ioDispatcher) {
+                preferenceMutex.withLock {
+                    try {
+                        com.v2ray.ang.handler.AppUpdateDownload.setPolicy(getApplication(), action.policy)
+                        _uiState.update { it.copy(preferences = it.preferences.copy(updateDownloadPolicy = action.policy)) }
+                    } catch (cancelled: CancellationException) { throw cancelled }
+                    catch (_: Exception) { refreshFilvlessPreferences(); toastError(R.string.toast_failure) }
+                }
+            }
             is MainAction.SetPreference -> setFilvlessPreference(action.key, action.enabled)
             MainAction.ForgetSubscriptions -> forgetSubscriptions()
             is MainAction.SetLanguage, MainAction.OpenSupport, MainAction.OpenReview -> Unit // Activity-owned system actions.
@@ -1079,6 +1091,8 @@ class MainViewModel(
         if (!running || clearTestingText) testRequests.invalidateCurrent()
         _uiState.update { state ->
             state.copy(
+                connectionHealth = if (!running) com.v2ray.ang.service.ConnectionHealth.IDLE
+                    else if (!state.isRunning) com.v2ray.ang.service.ConnectionHealth.CHECKING else state.connectionHealth,
                 isRunning = running,
                 isTesting = testRequests.isTesting,
                 status = if (!clearTestingText && state.isRunning == running) state.status

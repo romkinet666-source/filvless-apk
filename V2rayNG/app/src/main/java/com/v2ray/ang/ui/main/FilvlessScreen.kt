@@ -110,7 +110,7 @@ fun FilvlessScreen(
         AlertDialog(onDismissRequest = { dismissedUpdateVersion = update.latestVersion },
             containerColor = Card,
             title = { Text(stringResource(R.string.fv_update_available, update.latestVersion.orEmpty())) },
-            text = { Text(stringResource(R.string.fv_update_prompt)) },
+            text = { Text(stringResource(R.string.fv_update_available_hint)) },
             confirmButton = { TextButton(onClick = {
                 dismissedUpdateVersion = update.latestVersion
                 context.startActivity(android.content.Intent(context, AppUpdateActivity::class.java))
@@ -160,7 +160,13 @@ fun FilvlessScreen(
                         Text(stringResource(when {
                             state.connectionPending -> R.string.fv_connecting
                             state.connectionFailed -> R.string.fv_connection_failed
-                            state.isRunning -> R.string.fv_connected
+                            state.isRunning -> when (state.connectionHealth) {
+                                com.v2ray.ang.service.ConnectionHealth.CHECKING -> R.string.fv_health_checking
+                                com.v2ray.ang.service.ConnectionHealth.UNREACHABLE -> R.string.fv_health_unreachable
+                                com.v2ray.ang.service.ConnectionHealth.WAITING_NETWORK -> R.string.fv_health_waiting
+                                com.v2ray.ang.service.ConnectionHealth.RECOVERING -> R.string.fv_health_recovering
+                                else -> R.string.fv_connected
+                            }
                             else -> R.string.fv_disconnected
                         }),
                             Modifier.background(Brush.horizontalGradient(listOf(Color(0x993D2451), Color(0x6626193B))), CircleShape)
@@ -192,6 +198,10 @@ fun FilvlessScreen(
                         Spacer(Modifier.height(10.dp))
                         val selected = servers.firstOrNull { it.guid == state.selectedGuid }
                         Text(selected?.profile?.remarks ?: stringResource(R.string.fv_select_server), color = Muted, fontSize = 13.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                        if (state.isRunning && state.connectionHealth == com.v2ray.ang.service.ConnectionHealth.AVAILABLE)
+                            Text(stringResource(R.string.fv_health_verified), color = Violet, fontSize = 12.sp)
+                        if (state.isRunning && state.connectionHealth == com.v2ray.ang.service.ConnectionHealth.UNREACHABLE)
+                            Text(stringResource(R.string.fv_health_retry_hint), color = Muted, fontSize = 12.sp)
                         if (state.isTesting) Text(mainViewModel.formatStatus(state.status), color = Violet, fontSize = 13.sp)
                     }
                 }

@@ -7,7 +7,8 @@ import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
+import com.v2ray.ang.handler.AppUpdatePolicy
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -40,6 +41,22 @@ internal fun FilvlessSettingsContent(
     onDevices: () -> Unit,
     onAction: (MainAction) -> Unit,
 ) {
+    var downloadPolicyDialog by remember { mutableStateOf(false) }
+    val policyLabels = mapOf(AppUpdatePolicy.WIFI_ONLY to R.string.fv_update_wifi,
+        AppUpdatePolicy.ANY_NETWORK to R.string.fv_update_any, AppUpdatePolicy.MANUAL to R.string.fv_update_manual)
+    if (downloadPolicyDialog) AlertDialog(onDismissRequest = { downloadPolicyDialog = false },
+        title = { Text(stringResource(R.string.fv_update_download_policy)) },
+        text = { Column {
+            Text(stringResource(R.string.fv_update_policy_hint), fontSize = 13.sp)
+            AppUpdatePolicy.entries.forEach { policy ->
+                Row(Modifier.fillMaxWidth().clickable(role = Role.RadioButton) {
+                    onAction(MainAction.SetUpdateDownloadPolicy(policy)); downloadPolicyDialog = false
+                }.padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    RadioButton(selected = state.preferences.updateDownloadPolicy == policy, onClick = null)
+                    Text(stringResource(policyLabels.getValue(policy)), Modifier.padding(start = 8.dp))
+                }
+            }
+        } }, confirmButton = { TextButton(onClick = { downloadPolicyDialog = false }) { Text(stringResource(R.string.fv_close)) } })
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         val expired = state.subscriptionExpiresAt?.let { it * 1000 < System.currentTimeMillis() } == true
         val subscriptionLabel = when {
@@ -80,6 +97,13 @@ internal fun FilvlessSettingsContent(
                 state.preferences.haptics, state.preferencesLoaded) { onAction(MainAction.SetPreference(FilvlessPreference.HAPTICS, it)) }
             SettingsToggle(R.drawable.fv_palette, R.string.fv_effects, R.string.fv_effects_hint,
                 state.preferences.visualEffects, state.preferencesLoaded) { onAction(MainAction.SetPreference(FilvlessPreference.VISUAL_EFFECTS, it)) }
+        }
+        SettingsGroup(R.string.fv_check_update) {
+            SettingsLink(R.drawable.fv_ping, R.string.fv_update_download_policy, onClick = {
+                if (state.preferencesLoaded) downloadPolicyDialog = true
+            })
+            Text(stringResource(policyLabels.getValue(state.preferences.updateDownloadPolicy)),
+                Modifier.padding(start = 42.dp, bottom = 6.dp), color = FilvlessMuted, fontSize = 12.sp)
         }
         SettingsGroup(R.string.fv_information) {
             SettingsLink(R.drawable.fv_ping, R.string.fv_check_update,

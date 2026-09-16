@@ -52,6 +52,19 @@ object CoreServiceManager {
     private var processFinder: XrayProcessFinder? = null
     private var browserDialer: IDialerService? = null
     private var networkMonitor: NetworkMonitor? = null
+    private val lifecycleLock = Any()
+    private val sessionGeneration = java.util.concurrent.atomic.AtomicLong()
+    @Volatile private var stopRequested = true
+    @Volatile private var healthProxyPort = 0
+    @Volatile private var health = com.v2ray.ang.service.ConnectionHealth.IDLE
+    private val healthCheck = com.v2ray.ang.service.ConnectionHealthCheck(
+        CoroutineScope(SupervisorJob() + Dispatchers.IO),
+        { com.v2ray.ang.service.TunnelProbe.check(healthProxyPort) },
+        { state ->
+            health = state
+            getService()?.let { MessageHelper.sendMsg2UI(it, AppConfig.MSG_CONNECTION_HEALTH, state.name) }
+        },
+    )
     private val connectionTestScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     @Volatile
@@ -101,7 +114,11 @@ object CoreServiceManager {
         }
 
         try {
-            doStartCoreLoop(service, vpnInterface)
+            synchronized(lifecycleLock) {
+                sessionGeneration.incrementAndGet()
+                stopRequested = false
+                doStartCoreLoop(service, vpnInterface)
+            }
             return true
         } catch (e: Exception) {
             val message = e.message?.takeUnless { it.isBlank() } ?: e.javaClass.simpleName
@@ -153,7 +170,10 @@ object CoreServiceManager {
         if (dialerAddr.isNotNullEmpty()) {
             CoreNativeManager.reconcileBrowserDialer(dialerAddr)
         }
-        coreController.startLoop(result.content, tunFd)
+        val probePort = Utils.findRandomFreePort()
+        val runtimeConfig = com.v2ray.ang.service.withHealthInbound(result.content, probePort)
+        coreController.startLoop(runtimeConfig, tunFd)
+        healthProxyPort = probePort
 
         if (!isRunning()) {
             error("Core failed to start")
@@ -185,6 +205,10 @@ object CoreServiceManager {
         if (!isReload) {
             MessageHelper.sendMsg2UI(service, AppConfig.MSG_STATE_START_SUCCESS, "")
         }
+        if (!stopRequested) {
+            if (!isReload || networkMonitor?.hasNetwork == true) healthCheck.start()
+            else healthCheck.stop(com.v2ray.ang.service.ConnectionHealth.WAITING_NETWORK)
+        }
         NotificationManager.startSpeedNotification()
         LogUtil.i(AppConfig.TAG, "StartCore-Manager: Core started successfully")
     }
@@ -195,6 +219,9 @@ object CoreServiceManager {
      * @return True if the core was stopped successfully, false otherwise.
      */
     fun stopCoreLoop(): Boolean {
+        stopRequested = true
+        val stoppedGeneration = sessionGeneration.incrementAndGet()
+        healthCheck.stop()
         connectionTestScope.coroutineContext.cancelChildren()
         val service = getService() ?: return false
 
@@ -202,13 +229,13 @@ object CoreServiceManager {
         networkMonitor = null
         currentVpnInterface = null
 
-        if (isRunning()) {
-            CoroutineScope(Dispatchers.IO).launch {
-                try {
-                    coreController.stopLoop()
-                } catch (e: Exception) {
-                    LogUtil.e(AppConfig.TAG, "StartCore-Manager: Failed to stop V2Ray loop", e)
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                synchronized(lifecycleLock) {
+                    if (sessionGeneration.get() == stoppedGeneration && isRunning()) coreController.stopLoop()
                 }
+            } catch (e: Exception) {
+                LogUtil.e(AppConfig.TAG, "StartCore-Manager: Failed to stop V2Ray loop", e)
             }
         }
 
@@ -237,14 +264,32 @@ object CoreServiceManager {
      * and root mode as well, not just behind the VPN interface.
      */
     private fun startNetworkMonitor(service: Service) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return
         if (networkMonitor != null) return
 
         val connectivity = service.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return
+        val monitorGeneration = sessionGeneration.get()
+        fun activeSession() = !stopRequested && monitorGeneration == sessionGeneration.get()
         networkMonitor = NetworkMonitor(
             connectivity = connectivity,
-            onUnderlyingNetworksChanged = { networks -> serviceControl?.get()?.setUnderlyingNetworks(networks) },
-            onHandover = { reloadCore() },
+            onUnderlyingNetworksChanged = { networks -> if (activeSession()) serviceControl?.get()?.setUnderlyingNetworks(networks) },
+            onHandover = {
+                synchronized(lifecycleLock) {
+                    if (activeSession()) {
+                        healthCheck.stop(com.v2ray.ang.service.ConnectionHealth.RECOVERING)
+                        reloadCore()
+                    } else true
+                }
+            },
+            onRecoveryFailed = {
+                CoroutineScope(Dispatchers.Main).launch {
+                    if (activeSession()) {
+                        serviceControl?.get()?.stopService()
+                        MessageHelper.sendMsg2UI(service, AppConfig.MSG_STATE_START_FAILURE, "Network recovery failed")
+                    }
+                }
+            },
+            onInitialNetwork = { if (activeSession()) healthCheck.start() },
+            onNetworkLost = { if (activeSession()) healthCheck.stop(com.v2ray.ang.service.ConnectionHealth.WAITING_NETWORK) },
         ).also { it.register() }
     }
 
@@ -257,10 +302,10 @@ object CoreServiceManager {
      *
      * @return True if the core is running again.
      */
-    private fun reloadCore(): Boolean {
+    private fun reloadCore(): Boolean = synchronized(lifecycleLock) {
+        if (stopRequested) return false
         if (isReloading) return false
         val service = getService() ?: return false
-        if (!isRunning()) return false
 
         return try {
             val tunFd = currentVpnInterface
@@ -269,7 +314,8 @@ object CoreServiceManager {
             connectionTestScope.coroutineContext.cancelChildren()
             LogUtil.i(AppConfig.TAG, "StartCore-Manager: Core reload start...")
 
-            coreController.stopLoop()
+            if (isRunning()) coreController.stopLoop()
+            if (stopRequested) return false
             launchCore(service, tunFd, isReload = true)
 
             LogUtil.i(AppConfig.TAG, "StartCore-Manager: Core reload finished")
@@ -277,7 +323,6 @@ object CoreServiceManager {
         } catch (e: Exception) {
             val message = e.message?.takeUnless { it.isBlank() } ?: e.javaClass.simpleName
             LogUtil.e(AppConfig.TAG, "StartCore-Manager: Failed to reload core: $message", e)
-            MessageHelper.sendMsg2UI(service, AppConfig.MSG_STATE_START_FAILURE, message)
             false
         } finally {
             isReloading = false
@@ -466,8 +511,9 @@ object CoreServiceManager {
             val serviceControl = serviceControl?.get() ?: return
             when (intent?.getIntExtra("key", 0)) {
                 AppConfig.MSG_REGISTER_CLIENT -> {
-                    if (isRunning()) {
+                    if (isRunning() || (!stopRequested && networkMonitor != null)) {
                         MessageHelper.sendMsg2UI(serviceControl.getService(), AppConfig.MSG_STATE_RUNNING, "")
+                        MessageHelper.sendMsg2UI(serviceControl.getService(), AppConfig.MSG_CONNECTION_HEALTH, health.name)
                     } else {
                         MessageHelper.sendMsg2UI(serviceControl.getService(), AppConfig.MSG_STATE_NOT_RUNNING, "")
                     }

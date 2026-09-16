@@ -53,6 +53,9 @@ class MainRepository(
             }
             val requestId = safeIntent.getStringExtra(MessageHelper.EXTRA_REQUEST_ID).orEmpty()
             val event = when (safeIntent.getIntExtra("key", 0)) {
+                AppConfig.MSG_CONNECTION_HEALTH -> runCatching {
+                    MainServiceEvent.HealthChanged(com.v2ray.ang.service.ConnectionHealth.valueOf(safeIntent.getStringExtra("content").orEmpty()))
+                }.getOrNull()
                 AppConfig.MSG_STATE_RUNNING -> MainServiceEvent.StateRunning
                 AppConfig.MSG_STATE_NOT_RUNNING -> MainServiceEvent.StateNotRunning
                 AppConfig.MSG_STATE_START_SUCCESS -> MainServiceEvent.StateStartSuccess
@@ -111,6 +114,7 @@ class MainRepository(
         ""
 
     override fun readFilvlessPreferences() = FilvlessPreferences(
+        updateDownloadPolicy = com.v2ray.ang.handler.AppUpdatePolicy.read(),
         autoConnect = MmkvManager.decodeSettingsBool(FilvlessPreference.AUTO_CONNECT.storageKey, false),
         haptics = MmkvManager.decodeSettingsBool(FilvlessPreference.HAPTICS.storageKey, true),
         visualEffects = MmkvManager.decodeSettingsBool(FilvlessPreference.VISUAL_EFFECTS.storageKey, true),

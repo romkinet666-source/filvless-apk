@@ -49,10 +49,10 @@ class AppUpdateActivity : BaseComponentActivity() {
                 if (download.stage == "none" || retry) {
                     download = DownloadState("checking")
                     val update = UpdateCheckerManager.checkForUpdate(true)
-                    AppUpdateDownload.enqueue(this@AppUpdateActivity, update, retry)
+                    AppUpdateDownload.enqueue(this@AppUpdateActivity, update, retry, userRequested = !automatic)
                     download = AppUpdateDownload.status(this@AppUpdateActivity)
                 }
-                while (download.stage == "downloading") {
+                while (download.stage == "downloading" || download.stage == "waiting") {
                     delay(1500)
                     download = AppUpdateDownload.status(this@AppUpdateActivity)
                 }
@@ -88,13 +88,14 @@ class AppUpdateActivity : BaseComponentActivity() {
                 Text(stringResource(R.string.fv_check_update), style = MaterialTheme.typography.headlineSmall)
                 Text(stringResource(when (download.stage) {
                     "ready" -> R.string.fv_update_ready
+                    "waiting" -> R.string.fv_update_waiting_network
                     "downloading" -> R.string.fv_update_downloading
                     "failed" -> R.string.fv_update_failed
                     "none" -> R.string.update_already_latest_version
                     else -> R.string.update_checking_for_update
                 }))
                 if (download.version.isNotBlank()) Text(download.version)
-                if (download.stage == "downloading") {
+                if (download.stage == "downloading" || download.stage == "waiting") {
                     LinearProgressIndicator(progress = { download.percent / 100f }, modifier = Modifier.fillMaxWidth())
                     Text("${download.percent}%")
                     Text(stringResource(R.string.fv_update_background_hint))

@@ -4,6 +4,7 @@ import com.v2ray.ang.dto.ConnectionTestResult
 import com.v2ray.ang.dto.RealPingResult
 
 sealed class MainServiceEvent {
+    data class HealthChanged(val health: com.v2ray.ang.service.ConnectionHealth) : MainServiceEvent()
     data object SubscriptionsUpdated : MainServiceEvent()
     data object StateRunning : MainServiceEvent()
     data object StateNotRunning : MainServiceEvent()

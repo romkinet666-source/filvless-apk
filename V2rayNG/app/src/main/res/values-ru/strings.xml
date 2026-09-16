@@ -561,4 +561,17 @@
     <string name="connection_test_empty_message">подробности отсутствуют</string>
     <string name="value_unknown">неизвестно</string>
 
+    <string name="fv_health_checking">Проверяем соединение</string>
+    <string name="fv_health_unreachable">Связь не подтверждена</string>
+    <string name="fv_health_waiting">Ожидаем сеть</string>
+    <string name="fv_health_recovering">Восстанавливаем связь</string>
+    <string name="fv_health_verified">Доступ в интернет проверен</string>
+    <string name="fv_health_retry_hint">Попробуйте другой сервер или переподключитесь</string>
+    <string name="fv_update_download_policy">Фоновая загрузка</string>
+    <string name="fv_update_wifi">Только Wi-Fi</string>
+    <string name="fv_update_any">Любая сеть</string>
+    <string name="fv_update_manual">Вручную</string>
+    <string name="fv_update_policy_hint">Уведомления о новых версиях остаются во всех режимах. В роуминге загрузка отключена. При смене режима незавершённая загрузка начнётся заново.</string>
+    <string name="fv_update_waiting_network">Ожидаем разрешённую сеть</string>
+    <string name="fv_update_available_hint">Откройте обновление, чтобы скачать или установить эту версию. Фоновая загрузка зависит от выбранного режима.</string>
 </resources>
