@@ -368,6 +368,7 @@
                 android:resource="@xml/cache_paths" />
         </provider>
 
+        <activity android:name=".ui.main.DiagnosticsActivity" android:exported="false" />
         <activity android:name=".ui.main.AppUpdateActivity" android:exported="false" />
         <receiver android:name=".receiver.AppUpdatedReceiver" android:exported="false">
             <intent-filter><action android:name="android.intent.action.MY_PACKAGE_REPLACED" /></intent-filter>

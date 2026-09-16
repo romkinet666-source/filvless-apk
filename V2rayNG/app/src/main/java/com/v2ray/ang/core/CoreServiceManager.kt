@@ -550,6 +550,12 @@ object CoreServiceManager {
                     }
                 }
 
+                AppConfig.MSG_CHECK_CONNECTION_HEALTH -> {
+                    if (isOrderedBroadcast) resultCode = Activity.RESULT_OK
+                    if (isRunning() && !stopRequested && !isReloading) healthCheck.start()
+                    else MessageHelper.sendMsg2UI(serviceControl.getService(), AppConfig.MSG_CONNECTION_HEALTH,
+                        if (isReloading) "WAITING_NETWORK" else "IDLE")
+                }
                 AppConfig.MSG_MEASURE_DELAY -> {
                     if (isOrderedBroadcast) resultCode = Activity.RESULT_OK
                     measureV2rayDelay(intent.getStringExtra("content").orEmpty())

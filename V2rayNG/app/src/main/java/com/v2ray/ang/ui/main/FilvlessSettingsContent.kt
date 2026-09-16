@@ -88,6 +88,8 @@ internal fun FilvlessSettingsContent(
             SettingsLink(R.drawable.ic_translate_24dp, R.string.title_language, language, onLanguage)
         }
         SettingsGroup(R.string.fv_functions) {
+            SettingsToggle(R.drawable.fv_phone, R.string.fv_expiry_reminder, R.string.fv_expiry_reminder_hint,
+                state.preferences.expiryReminder, state.preferencesLoaded) { onAction(MainAction.SetPreference(FilvlessPreference.EXPIRY_REMINDER, it)) }
             SettingsToggle(R.drawable.fv_ping, R.string.fv_auto_update, R.string.fv_auto_update_hint,
                 state.preferences.autoUpdateSubscriptions, state.preferencesLoaded) { onAction(MainAction.SetPreference(FilvlessPreference.AUTO_UPDATE_SUBSCRIPTIONS, it)) }
 
@@ -106,6 +108,10 @@ internal fun FilvlessSettingsContent(
                 Modifier.padding(start = 42.dp, bottom = 6.dp), color = FilvlessMuted, fontSize = 12.sp)
         }
         SettingsGroup(R.string.fv_information) {
+            val context = androidx.compose.ui.platform.LocalContext.current
+            SettingsLink(R.drawable.fv_ping, R.string.fv_connection_diagnostics, onClick = {
+                context.startActivity(android.content.Intent(context, DiagnosticsActivity::class.java))
+            })
             SettingsLink(R.drawable.fv_ping, R.string.fv_check_update,
                 if (state.checkingAppUpdate) "…" else null, onClick = { onAction(MainAction.CheckAppUpdate) })
             SettingsLink(R.drawable.ic_about_24dp, R.string.fv_about, onClick = onAbout)

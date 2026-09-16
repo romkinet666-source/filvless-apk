@@ -1,6 +1,7 @@
 package com.v2ray.ang.ui.main
 
 data class FilvlessPreferences(
+    val expiryReminder: Boolean = true,
     val autoConnect: Boolean = false,
     val haptics: Boolean = true,
     val visualEffects: Boolean = true,
@@ -10,6 +11,7 @@ data class FilvlessPreferences(
 )
 
 enum class FilvlessPreference(val storageKey: String) {
+    EXPIRY_REMINDER("filvless_expiry_reminder"),
     AUTO_UPDATE_SUBSCRIPTIONS("filvless_auto_update_subscriptions"),
     AUTO_CONNECT("filvless_auto_connect"),
     HAPTICS("filvless_haptics"),
@@ -18,6 +20,7 @@ enum class FilvlessPreference(val storageKey: String) {
 
 internal fun FilvlessPreferences.withPreference(key: FilvlessPreference, enabled: Boolean): FilvlessPreferences =
     when (key) {
+        FilvlessPreference.EXPIRY_REMINDER -> copy(expiryReminder = enabled)
         FilvlessPreference.AUTO_UPDATE_SUBSCRIPTIONS -> copy(autoUpdateSubscriptions = enabled)
         FilvlessPreference.AUTO_CONNECT -> copy(autoConnect = enabled)
         FilvlessPreference.HAPTICS -> copy(haptics = enabled)

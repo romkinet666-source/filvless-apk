@@ -98,6 +98,7 @@ class MainActivity : HelperBaseComponentActivity() {
         super.onCreate(savedInstanceState)
         mainViewModel.onAction(MainAction.Initialize)
         com.v2ray.ang.handler.FilvlessAppUpdates.schedule(this)
+        com.v2ray.ang.handler.SubscriptionReminder.schedule(this)
 
         checkAndRequestPermission(PermissionType.POST_NOTIFICATIONS) {}
         if (savedInstanceState == null) {

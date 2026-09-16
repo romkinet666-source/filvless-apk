@@ -38,7 +38,7 @@ object FilvlessAppUpdates {
                 AppUpdateDownload.cleanup(applicationContext)
                 AppUpdateDownload.enqueue(applicationContext, update)
                 val version = update.latestVersion
-                if (!update.hasUpdate || version == null || MmkvManager.decodeSettingsString("filvless_notified_version") == version)
+                if (!update.hasUpdate || version == null || UpdateSnooze.isActive(version) || MmkvManager.decodeSettingsString("filvless_notified_version") == version)
                     return Result.success()
                 val context = AppLocaleManager.localizedContext(applicationContext)
                 if (!NotificationManagerCompat.from(context).areNotificationsEnabled() ||

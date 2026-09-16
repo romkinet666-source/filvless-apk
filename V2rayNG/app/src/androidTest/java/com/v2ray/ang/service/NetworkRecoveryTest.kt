@@ -60,6 +60,12 @@ class NetworkRecoveryTest {
             MmkvManager.encodeServerRaw(guid, """{"outbounds":[{"protocol":"freedom"}],"log":{"loglevel":"warning"}}""")
             LauncherManager.startService(context, guid)
             expect("AVAILABLE")
+            val diagnosticSteps = mutableListOf<com.v2ray.ang.handler.DiagnosticStep>()
+            kotlinx.coroutines.runBlocking {
+                com.v2ray.ang.handler.ConnectionDiagnostics(context).run { diagnosticSteps.add(it) }
+            }
+            assertEquals(com.v2ray.ang.handler.DiagnosticResult.VPN_OK, diagnosticSteps.last().result)
+            assertFalse(com.v2ray.ang.handler.diagnosticReport(diagnosticSteps).contains(guid))
             events.clear()
             shell("svc wifi disable")
             expect("RECOVERING"); expect("AVAILABLE")

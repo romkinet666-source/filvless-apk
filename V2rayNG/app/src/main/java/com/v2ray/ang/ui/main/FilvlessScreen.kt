@@ -13,6 +13,8 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.ui.semantics.selected
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -76,6 +78,7 @@ fun FilvlessScreen(
     var subscriptionText by rememberSaveable { mutableStateOf("") }
     var languagePicker by rememberSaveable { mutableStateOf(false) }
     var aboutDialog by rememberSaveable { mutableStateOf(false) }
+    var fullServerName by rememberSaveable { mutableStateOf<String?>(null) }
     var forgetDialog by rememberSaveable { mutableStateOf(false) }
     val view = LocalView.current
     val feedback: () -> Unit = { if (state.preferences.haptics) view.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK) }
@@ -104,19 +107,36 @@ fun FilvlessScreen(
         if (state.preferences.visualEffects && (state.isRunning || state.connectionPending)) 1f else 0f,
         animationSpec = if (state.preferences.visualEffects) tween(800) else snap(), label = "connectionEmphasis",
     )
+    var verificationPulse by remember { mutableStateOf(false) }
+    LaunchedEffect(state.connectionHealth, state.preferences.visualEffects) {
+        verificationPulse = state.preferences.visualEffects && state.connectionHealth == com.v2ray.ang.service.ConnectionHealth.AVAILABLE
+        if (verificationPulse) { kotlinx.coroutines.delay(650); verificationPulse = false }
+    }
+    val verifiedScale by animateFloatAsState(if (verificationPulse) .045f else 0f, if (state.preferences.visualEffects) tween(400) else snap(), label = "verifiedPulse")
     BackHandler(settings) { settings = false }
     var dismissedUpdateVersion by rememberSaveable { mutableStateOf<String?>(null) }
-    state.appUpdate?.takeIf { it.latestVersion != dismissedUpdateVersion }?.let { update ->
+    state.appUpdate?.takeIf { it.latestVersion != dismissedUpdateVersion && !com.v2ray.ang.handler.UpdateSnooze.isActive(it.latestVersion.orEmpty()) }?.let { update ->
         AlertDialog(onDismissRequest = { dismissedUpdateVersion = update.latestVersion },
             containerColor = Card,
             title = { Text(stringResource(R.string.fv_update_available, update.latestVersion.orEmpty())) },
-            text = { Text(stringResource(R.string.fv_update_available_hint)) },
+            text = { Column(Modifier.verticalScroll(rememberScrollState())) {
+                Text(stringResource(R.string.fv_update_available_hint))
+                if (update.size > 0) Text(stringResource(R.string.fv_update_size, update.size / 1_000_000.0), Modifier.padding(top = 8.dp))
+                val notes = com.v2ray.ang.handler.conciseReleaseNotes(update.releaseNotes)
+                if (notes.isNotBlank()) {
+                    Text(stringResource(R.string.fv_update_changes), Modifier.padding(top = 12.dp), fontWeight = FontWeight.Bold)
+                    Text(notes, Modifier.padding(top = 6.dp), fontSize = 13.sp)
+                }
+            } },
             confirmButton = { TextButton(onClick = {
                 dismissedUpdateVersion = update.latestVersion
                 context.startActivity(android.content.Intent(context, AppUpdateActivity::class.java))
             }) { Text(stringResource(R.string.fv_download_update)) } },
-            dismissButton = { TextButton(onClick = { dismissedUpdateVersion = update.latestVersion }) {
-                Text(stringResource(R.string.fv_close))
+            dismissButton = { TextButton(onClick = {
+                dismissedUpdateVersion = update.latestVersion
+                com.v2ray.ang.handler.UpdateSnooze.postpone(update.latestVersion.orEmpty())
+            }) {
+                Text(stringResource(R.string.fv_update_later))
             } })
     }
 
@@ -176,8 +196,8 @@ fun FilvlessScreen(
                         Spacer(Modifier.height(12.dp))
                         val powerLabel = stringResource(if (state.isRunning) R.string.fv_disconnect else R.string.fv_connect)
                         Box(Modifier.size(100.dp).graphicsLayer {
-                            scaleX = 1f + .04f * connectionEmphasis
-                            scaleY = 1f + .04f * connectionEmphasis
+                            scaleX = 1f + .04f * connectionEmphasis + verifiedScale
+                            scaleY = 1f + .04f * connectionEmphasis + verifiedScale
                         }.drawWithCache {
                             val radius = size.width * .85f
                             val halo = Brush.radialGradient(listOf(powerGlow.copy(alpha = .65f * connectionEmphasis), Color.Transparent),
@@ -201,7 +221,9 @@ fun FilvlessScreen(
                         if (state.isRunning && state.connectionHealth == com.v2ray.ang.service.ConnectionHealth.AVAILABLE)
                             Text(stringResource(R.string.fv_health_verified), color = Violet, fontSize = 12.sp)
                         if (state.isRunning && state.connectionHealth == com.v2ray.ang.service.ConnectionHealth.UNREACHABLE)
-                            Text(stringResource(R.string.fv_health_retry_hint), color = Muted, fontSize = 12.sp)
+                            TextButton(onClick = { context.startActivity(android.content.Intent(context, DiagnosticsActivity::class.java)) }) {
+                                Text(stringResource(R.string.fv_connection_diagnostics), color = Violet, fontSize = 12.sp)
+                            }
                         if (state.isTesting) Text(mainViewModel.formatStatus(state.status), color = Violet, fontSize = 13.sp)
                     }
                 }
@@ -252,7 +274,10 @@ fun FilvlessScreen(
                 }
                 items(if (providerDenied) emptyList() else servers, key = { it.guid }) { server ->
                     Row(Modifier.fillMaxWidth().background(if (state.selectedGuid == server.guid) Color(0xFF2A193A) else Color.Transparent, RoundedCornerShape(20.dp))
-                        .selectable(selected = state.selectedGuid == server.guid, role = Role.RadioButton, onClick = { act(MainAction.SelectServer(server.guid)) })
+                        .combinedClickable(role = Role.RadioButton, onClick = { act(MainAction.SelectServer(server.guid)) },
+                            onLongClickLabel = stringResource(R.string.fv_server_details),
+                            onLongClick = { feedback(); fullServerName = server.profile.remarks.take(2000) })
+                        .semantics { selected = state.selectedGuid == server.guid }
                         .padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
                         Box(Modifier.size(34.dp).background(Color(0xFF30203F), RoundedCornerShape(11.dp)), contentAlignment = Alignment.Center) {
                             Text(serverFlag(server.profile.remarks), Modifier.clearAndSetSemantics {}, fontSize = 21.sp)
@@ -269,9 +294,14 @@ fun FilvlessScreen(
                                 val selectedLabel = stringResource(R.string.fv_selected)
                                 Text("✓", Modifier.clearAndSetSemantics { contentDescription = selectedLabel }, color = Violet, fontSize = 16.sp)
                             }
-                            if (server.testDelayMillis > 0) Text(stringResource(R.string.fv_latency, server.testDelayMillis),
-                                color = Violet, fontSize = 12.sp, maxLines = 1, softWrap = false,
-                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                            Box(Modifier.height(18.dp).fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
+                                androidx.compose.animation.Crossfade(targetState = server.testDelayMillis,
+                                    animationSpec = if (state.preferences.visualEffects) tween(220) else snap(), label = "latency") { latency ->
+                                    if (latency > 0) Text(stringResource(R.string.fv_latency, latency),
+                                        color = when { latency <= 100 -> Color(0xFF9ED9B8); latency <= 250 -> Color(0xFFE2C27F); else -> Color(0xFFE7A0AB) },
+                                        fontSize = 12.sp, maxLines = 1, softWrap = false)
+                                }
+                            }
                         }
                     }
                 }
@@ -279,6 +309,10 @@ fun FilvlessScreen(
         }
     }
     }
+    fullServerName?.let { name -> AlertDialog(onDismissRequest = { fullServerName = null }, containerColor = Card,
+        title = { Text(stringResource(R.string.fv_server_details)) },
+        text = { Text(name, Modifier.verticalScroll(rememberScrollState())) },
+        confirmButton = { TextButton(onClick = { fullServerName = null }) { Text(stringResource(R.string.fv_close)) } }) }
     if (languagePicker) AlertDialog(
         onDismissRequest = { languagePicker = false }, containerColor = Card,
         title = { Text(stringResource(R.string.title_language)) },

@@ -7,6 +7,8 @@ import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -22,9 +24,14 @@ import com.v2ray.ang.ui.base.BaseComponentActivity
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
+import com.v2ray.ang.handler.UpdateSnooze
+import com.v2ray.ang.handler.conciseReleaseNotes
 
 class AppUpdateActivity : BaseComponentActivity() {
     private var download by mutableStateOf(DownloadState("checking"))
+    private var details by mutableStateOf<com.v2ray.ang.dto.CheckUpdateResult?>(null)
+    private var refreshJob: Job? = null
     private var permissionNeeded by mutableStateOf(false)
     private var installerOpened by mutableStateOf(false)
     private val installer = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
@@ -42,21 +49,28 @@ class AppUpdateActivity : BaseComponentActivity() {
         refresh(savedInstanceState == null && intent.getBooleanExtra("automatic", false))
     }
     private fun refresh(automatic: Boolean, retry: Boolean = false) {
-        lifecycleScope.launch {
+        refreshJob?.cancel()
+        refreshJob = lifecycleScope.launch {
             try {
                 AppUpdateDownload.cleanup(this@AppUpdateActivity)
                 download = AppUpdateDownload.status(this@AppUpdateActivity)
                 if (download.stage == "none" || retry) {
                     download = DownloadState("checking")
                     val update = UpdateCheckerManager.checkForUpdate(true)
+                    details = update
                     AppUpdateDownload.enqueue(this@AppUpdateActivity, update, retry, userRequested = !automatic)
                     download = AppUpdateDownload.status(this@AppUpdateActivity)
+                }
+                if (details == null && download.notes.isBlank() && download.stage != "none") {
+                    try { details = UpdateCheckerManager.checkForUpdate(true).takeIf { it.latestVersion == download.version } }
+                    catch (cancelled: CancellationException) { throw cancelled }
+                    catch (_: Exception) { /* Offline installation of the stored APK remains possible. */ }
                 }
                 while (download.stage == "downloading" || download.stage == "waiting") {
                     delay(1500)
                     download = AppUpdateDownload.status(this@AppUpdateActivity)
                 }
-                if (automatic && download.stage == "ready") install()
+                // Show release details and Later before entering the system installer.
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (_: Exception) { download = DownloadState("failed") }
         }
@@ -84,17 +98,24 @@ class AppUpdateActivity : BaseComponentActivity() {
     }
     @Composable override fun ScreenContent() {
         Surface(Modifier.fillMaxSize()) {
-            Column(Modifier.safeDrawingPadding().padding(24.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+            Column(Modifier.safeDrawingPadding().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
                 Text(stringResource(R.string.fv_check_update), style = MaterialTheme.typography.headlineSmall)
                 Text(stringResource(when (download.stage) {
                     "ready" -> R.string.fv_update_ready
-                    "waiting" -> R.string.fv_update_waiting_network
+                    "waiting" -> if (download.waitingForWifi) R.string.fv_update_waiting_wifi else R.string.fv_update_waiting_network
                     "downloading" -> R.string.fv_update_downloading
                     "failed" -> R.string.fv_update_failed
                     "none" -> R.string.update_already_latest_version
                     else -> R.string.update_checking_for_update
                 }))
                 if (download.version.isNotBlank()) Text(download.version)
+                val size = download.size.takeIf { it > 0 } ?: details?.size ?: 0L
+                if (size > 0) Text(stringResource(R.string.fv_update_size, size / 1_000_000.0))
+                val notes = download.notes.ifBlank { conciseReleaseNotes(details?.releaseNotes) }
+                if (notes.isNotBlank()) {
+                    Text(stringResource(R.string.fv_update_changes), style = MaterialTheme.typography.titleMedium)
+                    Text(notes, style = MaterialTheme.typography.bodyMedium)
+                }
                 if (download.stage == "downloading" || download.stage == "waiting") {
                     LinearProgressIndicator(progress = { download.percent / 100f }, modifier = Modifier.fillMaxWidth())
                     Text("${download.percent}%")
@@ -112,6 +133,9 @@ class AppUpdateActivity : BaseComponentActivity() {
                 if (download.stage == "failed") Button(onClick = { refresh(false, retry = true) }) {
                     Text(stringResource(R.string.fv_devices_retry))
                 }
+                if (download.version.isNotBlank()) TextButton(onClick = {
+                    UpdateSnooze.postpone(download.version); finish()
+                }) { Text(stringResource(R.string.fv_update_later)) }
                 TextButton(onClick = { finish() }) { Text(stringResource(R.string.fv_close)) }
             }
         }

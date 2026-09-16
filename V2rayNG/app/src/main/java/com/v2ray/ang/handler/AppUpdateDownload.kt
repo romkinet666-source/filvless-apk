@@ -20,7 +20,7 @@ internal fun validUpdateDownload(url: String?, hash: String?, size: Long): Boole
     url?.matches(Regex("https://github\\.com/romkinet666-source/filvless-apk/releases/download/v[0-9][A-Za-z0-9._-]*/Filvless-[A-Za-z0-9._-]+-universal\\.apk")) == true &&
         hash?.matches(Regex("[a-fA-F0-9]{64}")) == true && size in 1..250_000_000L
 
-internal data class DownloadState(val stage: String, val version: String = "", val percent: Int = 0)
+internal data class DownloadState(val stage: String, val version: String = "", val percent: Int = 0, val size: Long = 0, val notes: String = "", val waitingForWifi: Boolean = false)
 
 /** State and APK belong to this app; a file lock also serializes the :bg worker process. */
 internal object AppUpdateDownload {
@@ -76,7 +76,7 @@ internal object AppUpdateDownload {
         val id = manager(context).enqueue(request)
         try {
             write(context, JSONObject().put("id", id).put("version", update.latestVersion)
-                .put("url", update.downloadUrl).put("hash", update.sha256).put("size", update.size).put("offered", false))
+                .put("notes", conciseReleaseNotes(update.releaseNotes)).put("wifiOnly", policy == AppUpdatePolicy.WIFI_ONLY).put("url", update.downloadUrl).put("hash", update.sha256).put("size", update.size).put("offered", false))
         } catch (error: Exception) { manager(context).remove(id); throw error }
     }
     suspend fun setPolicy(context: Context, policy: AppUpdatePolicy) {
@@ -89,7 +89,7 @@ internal object AppUpdateDownload {
             // A verified/finished package needs no network and remains available for installation.
             if (complete) return@locked null
             val version = state.optString("version")
-            val update = CheckUpdateResult(hasUpdate = true, latestVersion = version,
+            val update = CheckUpdateResult(hasUpdate = true, latestVersion = version, releaseNotes = state.optString("notes"),
                 downloadUrl = state.optString("url").ifBlank {
                     "https://github.com/romkinet666-source/filvless-apk/releases/download/v$version/Filvless-$version-universal.apk"
                 }, sha256 = state.optString("hash"), size = state.optLong("size"))
@@ -105,7 +105,7 @@ internal object AppUpdateDownload {
             clear(context, state); return@locked DownloadState("none")
         }
         if (state.optBoolean("failed")) return@locked DownloadState("failed", version)
-        manager(context).query(DownloadManager.Query().setFilterById(state.getLong("id"))).use { cursor ->
+        val result = manager(context).query(DownloadManager.Query().setFilterById(state.getLong("id"))).use { cursor ->
             if (cursor == null || !cursor.moveToFirst()) return@use DownloadState("failed", version)
             when (cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))) {
                 DownloadManager.STATUS_SUCCESSFUL -> {
@@ -121,6 +121,8 @@ internal object AppUpdateDownload {
                 }
             }
         }
+        result.copy(size = state.optLong("size"), notes = state.optString("notes"),
+            waitingForWifi = result.stage == "waiting" && state.optBoolean("wifiOnly"))
     }
     @Suppress("DEPRECATION")
     private fun verify(context: Context, state: JSONObject): Boolean = runCatching {
@@ -148,7 +150,7 @@ internal object AppUpdateDownload {
         if (status(context).stage != "ready") return false
         return locked(context) {
             val state = read(context) ?: return@locked false
-            if (state.optBoolean("offered")) false else { write(context, state.put("offered", true)); true }
+            if (state.optBoolean("offered") || UpdateSnooze.isActive(state.optString("version"))) false else { write(context, state.put("offered", true)); true }
         }
     }
     suspend fun installationFile(context: Context): File? = locked(context) {

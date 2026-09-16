@@ -37,7 +37,7 @@ class AppUpdatePolicyStorageTest {
         val original = MmkvManager.decodeSettingsString(AppUpdatePolicy.KEY)
         val state = File(context.filesDir, "app-update.json")
         check(!state.exists()) { "Test requires no pending update" }
-        val future = CheckUpdateResult(true, "99.0.0-preview",
+        val future = CheckUpdateResult(true, "99.0.0-preview", releaseNotes = "## New\n- Fixture note",
             downloadUrl = "https://github.com/romkinet666-source/filvless-apk/releases/download/v99.0.0-preview/Filvless-99.0.0-preview-universal.apk",
             sha256 = "a".repeat(64), size = 100)
         try {
@@ -46,6 +46,7 @@ class AppUpdatePolicyStorageTest {
             assertFalse(state.exists())
             AppUpdateDownload.enqueue(context, future, userRequested = true)
             assertTrue(state.exists())
+            assertTrue(JSONObject(state.readText()).getString("notes").contains("Fixture note"))
             val id = JSONObject(state.readText()).getLong("id")
             AppUpdateDownload.setPolicy(context, AppUpdatePolicy.MANUAL)
             assertFalse(state.exists())

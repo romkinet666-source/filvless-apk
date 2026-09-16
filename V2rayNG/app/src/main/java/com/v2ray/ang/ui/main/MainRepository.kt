@@ -114,6 +114,7 @@ class MainRepository(
         ""
 
     override fun readFilvlessPreferences() = FilvlessPreferences(
+        expiryReminder = MmkvManager.decodeSettingsBool(FilvlessPreference.EXPIRY_REMINDER.storageKey, true),
         updateDownloadPolicy = com.v2ray.ang.handler.AppUpdatePolicy.read(),
         autoConnect = MmkvManager.decodeSettingsBool(FilvlessPreference.AUTO_CONNECT.storageKey, false),
         haptics = MmkvManager.decodeSettingsBool(FilvlessPreference.HAPTICS.storageKey, true),
@@ -125,6 +126,7 @@ class MainRepository(
     override fun writeFilvlessPreference(key: FilvlessPreference, enabled: Boolean): Boolean {
         val saved = MmkvManager.encodeSettings(key.storageKey, enabled)
         if (saved && key == FilvlessPreference.AUTO_UPDATE_SUBSCRIPTIONS) SubscriptionUpdater.sync(app, true)
+        if (saved && key == FilvlessPreference.EXPIRY_REMINDER) com.v2ray.ang.handler.SubscriptionReminder.schedule(app, true)
         return saved
     }
 
