@@ -134,23 +134,41 @@ class MainViewModel(
     private fun handleServiceEvent(event: MainServiceEvent) {
         when (event) {
             is MainServiceEvent.HealthChanged -> {
+                val changed = uiState.value.connectionHealth != event.health
                 if (uiState.value.isRunning) _uiState.update { it.copy(connectionHealth = event.health) }
+                if (changed) when (event.health) {
+                    com.v2ray.ang.service.ConnectionHealth.WAITING_NETWORK -> com.v2ray.ang.handler.FilvlessEventLog.add(
+                        dataSource.getString(R.string.fv_event_network_changed), dataSource.getString(R.string.fv_event_recovering))
+                    com.v2ray.ang.service.ConnectionHealth.UNREACHABLE -> com.v2ray.ang.handler.FilvlessEventLog.add(
+                        dataSource.getString(R.string.fv_connection_lost_title), dataSource.getString(R.string.fv_connection_lost_body))
+                    com.v2ray.ang.service.ConnectionHealth.AVAILABLE -> com.v2ray.ang.handler.FilvlessEventLog.add(
+                        dataSource.getString(R.string.fv_event_connection_checked), dataSource.getString(R.string.fv_health_verified))
+                    else -> Unit
+                }
             }
-            MainServiceEvent.SubscriptionsUpdated -> setupGroupTab(forceRefresh = true)
+            MainServiceEvent.SubscriptionsUpdated -> {
+                com.v2ray.ang.handler.FilvlessEventLog.add(dataSource.getString(R.string.fv_event_subscription_updated))
+                setupGroupTab(forceRefresh = true)
+            }
             MainServiceEvent.StateRunning -> updateRunningState(true, clearTestingText = false)
             MainServiceEvent.StateNotRunning -> updateRunningState(false, clearTestingText = false)
             MainServiceEvent.StateStartSuccess -> {
                 toastSuccess(R.string.toast_services_success)
+                com.v2ray.ang.handler.FilvlessEventLog.add(dataSource.getString(R.string.fv_event_connected))
                 updateRunningState(true)
             }
 
             MainServiceEvent.StateStartFailure -> {
                 toastError(R.string.toast_services_failure)
+                com.v2ray.ang.handler.FilvlessEventLog.add(dataSource.getString(R.string.fv_event_connection_failed))
                 updateRunningState(false)
                 _uiState.update { it.copy(connectionFailed = true) }
             }
 
-            MainServiceEvent.StateStopSuccess -> updateRunningState(false)
+            MainServiceEvent.StateStopSuccess -> {
+                com.v2ray.ang.handler.FilvlessEventLog.add(dataSource.getString(R.string.fv_event_disconnected))
+                updateRunningState(false)
+            }
             is MainServiceEvent.MeasureDelayResult -> {
                 if (!uiState.value.isRunning || !testRequests.completeCurrent(event.requestId)) return
                 _uiState.update { it.copy(isTesting = testRequests.isTesting, status = MainStatus.ConnectionTest(event.result)) }
@@ -710,6 +728,10 @@ class MainViewModel(
                         else ->
                             toast(dataSource.getString(R.string.title_update_subscription_result, result.configCount, result.successCount, result.failureCount, result.skipCount))
                     }
+                    if (result.successCount > 0) com.v2ray.ang.handler.FilvlessEventLog.add(
+                        dataSource.getString(R.string.fv_event_subscription_updated))
+                    if (result.failureCount > 0) com.v2ray.ang.handler.FilvlessEventLog.add(
+                        dataSource.getString(R.string.fv_event_subscription_error), dataSource.getString(R.string.fv_sub_kept))
                     if (result.configCount > 0) {
                         setupGroupTab(forceRefresh = true)
                         refreshSelectedGuid()

@@ -39,10 +39,17 @@ internal fun FilvlessSettingsContent(
     onAbout: () -> Unit,
     onForget: () -> Unit,
     onDevices: () -> Unit,
+    onHistory: () -> Unit,
     onAction: (MainAction) -> Unit,
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val tileLabel = stringResource(R.string.app_name)
+    val backgroundNeedsAttention = remember {
+        val manager = context.getSystemService(android.app.ActivityManager::class.java)
+        val power = context.getSystemService(android.os.PowerManager::class.java)
+        (android.os.Build.VERSION.SDK_INT >= 28 && manager.isBackgroundRestricted) ||
+            !power.isIgnoringBatteryOptimizations(context.packageName) || power.isPowerSaveMode
+    }
     var tileHelp by remember { mutableStateOf(false) }
     if (tileHelp) AlertDialog(onDismissRequest = { tileHelp = false },
         title = { Text(stringResource(R.string.fv_tile)) }, text = { Text(stringResource(R.string.fv_tile_hint)) },
@@ -89,6 +96,7 @@ internal fun FilvlessSettingsContent(
         }
         Column(Modifier.fillMaxWidth().background(FilvlessCard, RoundedCornerShape(18.dp)).padding(horizontal = 14.dp, vertical = 2.dp)) {
             SettingsLink(R.drawable.fv_phone, R.string.fv_devices, onClick = onDevices)
+            SettingsLink(R.drawable.ic_logcat_24dp, R.string.fv_history, onClick = onHistory)
         }
         SettingsGroup(R.string.fv_appearance) {
             val language = when (state.preferences.language) {
@@ -115,6 +123,8 @@ internal fun FilvlessSettingsContent(
             SettingsLink(R.drawable.fv_phone, R.string.fv_background, onClick = {
                 context.startActivity(android.content.Intent(context, BackgroundWorkActivity::class.java))
             })
+            if (backgroundNeedsAttention) Text(stringResource(R.string.fv_bg_attention),
+                Modifier.padding(start = 42.dp, end = 8.dp, bottom = 6.dp), color = Color(0xFFE5BA82), fontSize = 12.sp, lineHeight = 16.sp)
             SettingsToggle(R.drawable.fv_phone, R.string.fv_expiry_reminder, R.string.fv_expiry_reminder_hint,
                 state.preferences.expiryReminder, state.preferencesLoaded) { onAction(MainAction.SetPreference(FilvlessPreference.EXPIRY_REMINDER, it)) }
             SettingsToggle(R.drawable.fv_ping, R.string.fv_auto_update, R.string.fv_auto_update_hint,

@@ -30,7 +30,11 @@ class QSTileService : TileService() {
      */
     fun setState(state: Int) {
         qsTile?.icon = Icon.createWithResource(applicationContext, R.drawable.ic_stat_name)
-        if (state == Tile.STATE_INACTIVE) {
+        if (state == Tile.STATE_UNAVAILABLE) {
+            qsTile?.state = Tile.STATE_UNAVAILABLE
+            qsTile?.label = getString(R.string.app_name)
+            if (android.os.Build.VERSION.SDK_INT >= 29) qsTile?.subtitle = getString(R.string.fv_connecting)
+        } else if (state == Tile.STATE_INACTIVE) {
             qsTile?.state = Tile.STATE_INACTIVE
             qsTile?.label = getString(R.string.app_name)
         } else if (state == Tile.STATE_ACTIVE) {
@@ -87,7 +91,10 @@ class QSTileService : TileService() {
                 if (com.v2ray.ang.handler.MmkvManager.getSelectServer().isNullOrBlank() ||
                     (com.v2ray.ang.handler.SettingsManager.isVpnMode() && android.net.VpnService.prepare(this) != null)) {
                     openApp()
-                } else LauncherManager.startServiceFromToggle(this)
+                } else {
+                    setState(Tile.STATE_UNAVAILABLE)
+                    LauncherManager.startServiceFromToggle(this)
+                }
             }
 
             Tile.STATE_ACTIVE -> {

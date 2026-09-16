@@ -220,6 +220,9 @@
             android:name=".ui.main.OnboardingActivity"
             android:exported="false" />
         <activity
+            android:name=".ui.main.EventHistoryActivity"
+            android:exported="false" />
+        <activity
             android:name=".ui.TranslatorsActivity"
             android:exported="false" />
 

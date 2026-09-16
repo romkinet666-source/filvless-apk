@@ -136,6 +136,7 @@
     <string name="fv_bg_saver_on">Power saving mode is enabled.</string>
     <string name="fv_bg_saver_off">Power saving mode is disabled.</string>
     <string name="fv_bg_limits">Phone manufacturers may have additional restrictions. These checks cannot guarantee continuous operation; change settings only if needed.</string>
+    <string name="fv_bg_attention">Android may restrict Filvless in the background. Open this section to review the settings.</string>
     <string name="fv_bg_app_settings">App settings</string>
     <string name="fv_bg_battery_settings">Battery optimization</string>
     <string name="fv_update_no_space">Not enough free space. Free storage and retry. Extra space is also needed for Android installation.</string>
@@ -146,6 +147,7 @@
     <string name="fv_whats_new_title">Updated to %1$s</string>
     <string name="fv_whats_new_068">• Filvless tile in Quick Settings and connection cancellation.\n\n• Clear subscription status, device names and background diagnostics.\n\n• Download cancellation and clearer update errors.</string>
     <string name="fv_whats_new_069">• Welcome screen on a fresh installation.\n\n• Notifications after a confirmed VPN interruption and recovery.\n\n• A redesigned About page.</string>
+    <string name="fv_whats_new_0610">• Subscription card on the main screen with expiry and last update.\n\n• Recent local Filvless event history without technical secrets.\n\n• “Connecting…” state for the Android tile.\n\n• Background restriction warning only when Android reports a possible limit.</string>
     <string name="fv_onboarding_welcome">Welcome to Filvless</string>
     <string name="fv_onboarding_welcome_hint">Simple, fast access to your VPN subscription.</string>
     <string name="fv_onboarding_subscription">Add your subscription</string>
@@ -165,4 +167,15 @@
     <string name="fv_connection_restored_title">Filvless connection restored</string>
     <string name="fv_connection_restored_body">VPN access is confirmed again.</string>
     <string name="fv_connection_events">VPN status</string>
+    <string name="fv_history">History</string>
+    <string name="fv_history_clear">Clear</string>
+    <string name="fv_history_empty">Recent Filvless events will appear here.</string>
+    <string name="fv_event_connected">VPN connected</string>
+    <string name="fv_event_disconnected">VPN disconnected</string>
+    <string name="fv_event_connection_failed">VPN could not connect</string>
+    <string name="fv_event_connection_checked">Connection confirmed</string>
+    <string name="fv_event_network_changed">Network changed</string>
+    <string name="fv_event_recovering">Filvless is checking and restoring the connection.</string>
+    <string name="fv_event_subscription_updated">Subscription updated</string>
+    <string name="fv_event_subscription_error">Subscription could not update</string>
 </resources>
