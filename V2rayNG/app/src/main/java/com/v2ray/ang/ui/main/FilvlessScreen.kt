@@ -224,7 +224,6 @@ fun FilvlessScreen(
                             TextButton(onClick = { context.startActivity(android.content.Intent(context, DiagnosticsActivity::class.java)) }) {
                                 Text(stringResource(R.string.fv_connection_diagnostics), color = Violet, fontSize = 12.sp)
                             }
-                        if (state.isTesting) Text(mainViewModel.formatStatus(state.status), color = Violet, fontSize = 13.sp)
                     }
                 }
             LazyColumn(
