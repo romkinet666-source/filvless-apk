@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
     <string name="fv_appearance">Appearance</string>
     <string name="fv_language_system">System</string>
     <string name="fv_language_ru">Русский</string>
@@ -145,4 +145,24 @@
     <string name="fv_update_cancelled">Download cancelled. This version will not download automatically until you request it again.</string>
     <string name="fv_whats_new_title">Updated to %1$s</string>
     <string name="fv_whats_new_068">• Filvless tile in Quick Settings and connection cancellation.\n\n• Clear subscription status, device names and background diagnostics.\n\n• Download cancellation and clearer update errors.</string>
+    <string name="fv_whats_new_069">• Welcome screen on a fresh installation.\n\n• Notifications after a confirmed VPN interruption and recovery.\n\n• A redesigned About page.</string>
+    <string name="fv_onboarding_welcome">Welcome to Filvless</string>
+    <string name="fv_onboarding_welcome_hint">Simple, fast access to your VPN subscription.</string>
+    <string name="fv_onboarding_subscription">Add your subscription</string>
+    <string name="fv_onboarding_subscription_hint">Copy the link from your VPN bot. Filvless can paste it from the clipboard.</string>
+    <string name="fv_onboarding_connect">Choose a server</string>
+    <string name="fv_onboarding_connect_hint">Check availability, choose a suitable server and tap the large connect button.</string>
+    <string name="fv_next">Next</string>
+    <string name="fv_start">Start</string>
+    <string name="fv_skip">Skip</string>
+    <string name="fv_about_tagline">Your VPN in one app</string>
+    <string name="fv_about_version">Version %1$s</string>
+    <string name="fv_purchase_bot">Buy a subscription</string>
+    <string name="fv_source_code">Source code and licenses</string>
+    <string name="fv_whats_new">What’s new</string>
+    <string name="fv_connection_lost_title">Filvless connection interrupted</string>
+    <string name="fv_connection_lost_body">VPN access could not be confirmed. Filvless is continuing recovery.</string>
+    <string name="fv_connection_restored_title">Filvless connection restored</string>
+    <string name="fv_connection_restored_body">VPN access is confirmed again.</string>
+    <string name="fv_connection_events">VPN status</string>
 </resources>

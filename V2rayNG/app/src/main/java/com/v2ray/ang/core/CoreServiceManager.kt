@@ -62,6 +62,7 @@ object CoreServiceManager {
         { com.v2ray.ang.service.TunnelProbe.check(healthProxyPort) },
         { state ->
             health = state
+            NotificationManager.onConnectionHealthChanged(state)
             getService()?.let { MessageHelper.sendMsg2UI(it, AppConfig.MSG_CONNECTION_HEALTH, state.name) }
         },
     )
@@ -117,6 +118,7 @@ object CoreServiceManager {
             synchronized(lifecycleLock) {
                 sessionGeneration.incrementAndGet()
                 stopRequested = false
+                NotificationManager.resetConnectionHealthEvents()
                 doStartCoreLoop(service, vpnInterface)
             }
             return true
@@ -222,6 +224,7 @@ object CoreServiceManager {
         stopRequested = true
         val stoppedGeneration = sessionGeneration.incrementAndGet()
         healthCheck.stop()
+        NotificationManager.resetConnectionHealthEvents()
         connectionTestScope.coroutineContext.cancelChildren()
         val service = getService() ?: return false
 

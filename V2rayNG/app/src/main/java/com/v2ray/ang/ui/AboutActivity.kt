@@ -1,148 +1,91 @@
 package com.v2ray.ang.ui
 
 import android.content.Intent
-import android.os.Bundle
-import android.webkit.WebView
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.unit.sp
 import com.v2ray.ang.AppConfig
 import com.v2ray.ang.BuildConfig
 import com.v2ray.ang.R
-import com.v2ray.ang.core.CoreNativeManager
 import com.v2ray.ang.ui.base.BaseComponentActivity
-import com.v2ray.ang.ui.compose.AppTopBar
-import com.v2ray.ang.ui.compose.NavigationBarsSpacer
-import com.v2ray.ang.ui.compose.SettingsMenuItem
-import com.v2ray.ang.ui.compose.VersionInfoBlock
+import com.v2ray.ang.ui.main.AppUpdateActivity
 import com.v2ray.ang.util.Utils
 
 class AboutActivity : BaseComponentActivity() {
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-    }
-
     @Composable
-    override fun ScreenContent() {
-        AboutScreen(
-            onBackClick = { finish() },
-            onTranslatorsClick = {
-                startActivity(Intent(this, TranslatorsActivity::class.java))
-            }
-        )
-    }
+    override fun ScreenContent() = FilvlessAboutScreen(onBack = ::finish)
 }
 
 @Composable
-fun AboutScreen(
-    onBackClick: () -> Unit,
-    onTranslatorsClick: () -> Unit
-) {
+private fun FilvlessAboutScreen(onBack: () -> Unit) {
     val context = LocalContext.current
-    var showOssDialog by remember { mutableStateOf(false) }
-
-    val libVersion = CoreNativeManager.getLibVersion()
-    val versionText = "v${BuildConfig.VERSION_NAME} ($libVersion)"
-    val appIdText = BuildConfig.APPLICATION_ID
-
-    Scaffold(
-        contentWindowInsets = WindowInsets(0),
-        topBar = {
-            AppTopBar(
-                title = stringResource(R.string.title_about),
-                onBackClick = onBackClick
-            )
+    var showWhatsNew by remember { mutableStateOf(false) }
+    val card = Color(0xFF1A1521)
+    val violet = Color(0xFFB59AD8)
+    Column(
+        Modifier.fillMaxSize().background(Color(0xFF0B080F))
+            .verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 16.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onBack) {
+                Icon(painterResource(R.drawable.ic_arrow_back_24dp), stringResource(R.string.fv_back), tint = Color.White)
+            }
+            Text(stringResource(R.string.fv_about), color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
         }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .verticalScroll(rememberScrollState())
-        ) {
-            SettingsMenuItem(
-                icon = painterResource(R.drawable.ic_source_code_24dp),
-                title = stringResource(R.string.title_source_code),
-                onClick = { Utils.openUri(context, AppConfig.APP_URL) }
-            )
-            SettingsMenuItem(
-                icon = painterResource(R.drawable.license_24px),
-                title = stringResource(R.string.title_oss_license),
-                onClick = { showOssDialog = true }
-            )
-            SettingsMenuItem(
-                icon = painterResource(R.drawable.ic_translate_24dp),
-                title = stringResource(R.string.title_translators),
-                onClick = onTranslatorsClick
-            )
-            SettingsMenuItem(
-                icon = painterResource(R.drawable.ic_feedback_24dp),
-                title = stringResource(R.string.title_pref_feedback),
-                onClick = { Utils.openUri(context, AppConfig.APP_ISSUES_URL) }
-            )
-            SettingsMenuItem(
-                icon = painterResource(R.drawable.ic_telegram_24dp),
-                title = stringResource(R.string.title_tg_channel),
-                onClick = { Utils.openUri(context, AppConfig.TG_CHANNEL_URL) }
-            )
-            SettingsMenuItem(
-                icon = painterResource(R.drawable.ic_privacy_24dp),
-                title = stringResource(R.string.title_privacy_policy),
-                onClick = { Utils.openUri(context, AppConfig.APP_PRIVACY_POLICY) }
-            )
-            VersionInfoBlock(
-                versionText = versionText,
-                appIdText = appIdText
-            )
-            NavigationBarsSpacer()
+        Spacer(Modifier.height(20.dp))
+        Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+            Image(painterResource(R.drawable.filvless_brand), contentDescription = null,
+                modifier = Modifier.size(150.dp), contentScale = ContentScale.Crop)
+            Text("FILVLESS", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.fv_about_tagline), color = Color(0xFFB8B0C5), fontSize = 15.sp)
+            Spacer(Modifier.height(6.dp))
+            Text(stringResource(R.string.fv_about_version, BuildConfig.VERSION_NAME), color = violet, fontSize = 14.sp)
         }
+        Spacer(Modifier.height(24.dp))
+        Button(onClick = { context.startActivity(Intent(context, AppUpdateActivity::class.java)) },
+            modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(17.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF632D91), contentColor = Color.White)) {
+            Text(stringResource(R.string.fv_check_update))
+        }
+        Spacer(Modifier.height(16.dp))
+        Column(Modifier.fillMaxWidth().background(card, RoundedCornerShape(24.dp)).padding(vertical = 4.dp)) {
+            AboutRow(stringResource(R.string.fv_support)) { Utils.openUri(context, "https://t.me/Godfather099") }
+            AboutRow(stringResource(R.string.fv_purchase_bot)) { Utils.openUri(context, "https://t.me/filvless_bot") }
+            AboutRow(stringResource(R.string.title_privacy_policy)) {
+                Utils.openUri(context, "https://github.com/romkinet666-source/filvless-apk/blob/main/PRIVACY.md")
+            }
+            AboutRow(stringResource(R.string.fv_whats_new)) { showWhatsNew = true }
+            AboutRow(stringResource(R.string.fv_source_code)) { Utils.openUri(context, AppConfig.APP_URL) }
+        }
+        Spacer(Modifier.height(24.dp))
     }
+    if (showWhatsNew) AlertDialog(onDismissRequest = { showWhatsNew = false }, containerColor = card,
+        title = { Text(stringResource(R.string.fv_whats_new_title, BuildConfig.VERSION_NAME), color = Color.White) },
+        text = { Text(stringResource(R.string.fv_whats_new_069), color = Color(0xFFB8B0C5), lineHeight = 22.sp) },
+        confirmButton = { TextButton(onClick = { showWhatsNew = false }) { Text(stringResource(android.R.string.ok)) } })
+}
 
-    if (showOssDialog) {
-        AlertDialog(
-            onDismissRequest = { showOssDialog = false },
-            title = { Text(stringResource(R.string.title_oss_license)) },
-            text = {
-                AndroidView(
-                    factory = { ctx ->
-                        WebView(ctx).apply {
-                            loadUrl("file:///android_asset/open_source_licenses.html")
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 300.dp)
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = { showOssDialog = false }) {
-                    Text(stringResource(R.string.action_ok))
-                }
-            },
-            containerColor = MaterialTheme.colorScheme.surface,
-            modifier = Modifier.padding(bottom = 60.dp)
-        )
+@Composable
+private fun AboutRow(title: String, onClick: () -> Unit) {
+    Row(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 20.dp, vertical = 17.dp),
+        horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+        Text(title, color = Color.White, fontSize = 16.sp)
+        Icon(painterResource(R.drawable.fv_chevron), contentDescription = null, tint = Color(0xFFB59AD8))
     }
 }

@@ -96,6 +96,7 @@ class MainActivity : HelperBaseComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (savedInstanceState == null) launchOnboardingIfNeeded()
         mainViewModel.onAction(MainAction.Initialize)
         com.v2ray.ang.handler.FilvlessAppUpdates.schedule(this)
         com.v2ray.ang.handler.SubscriptionReminder.schedule(this)
@@ -107,6 +108,18 @@ class MainActivity : HelperBaseComponentActivity() {
                     lifecycle.withResumed { requestServiceStart() }
                 }
             }
+        }
+    }
+
+    private fun launchOnboardingIfNeeded() {
+        val completed = MmkvManager.decodeSettingsBool(FILVLESS_ONBOARDING_COMPLETE, false)
+        val packageInfo = packageManager.getPackageInfo(packageName, 0)
+        val isPackageUpdate = packageInfo.lastUpdateTime > packageInfo.firstInstallTime + 2_000L
+        val hasProfiles = MmkvManager.decodeAllServerList().isNotEmpty()
+        if (shouldShowOnboarding(completed, isPackageUpdate, hasProfiles)) {
+            startActivity(Intent(this, OnboardingActivity::class.java))
+        } else if (!completed) {
+            MmkvManager.encodeSettings(FILVLESS_ONBOARDING_COMPLETE, true)
         }
     }
 

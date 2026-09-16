@@ -18,6 +18,9 @@ import com.v2ray.ang.dto.entities.ProfileItem
 import com.v2ray.ang.extension.delay
 import com.v2ray.ang.extension.toSpeedString
 import com.v2ray.ang.ui.main.MainActivity
+import com.v2ray.ang.service.ConnectionHealth
+import com.v2ray.ang.service.ConnectionHealthEvent
+import com.v2ray.ang.service.ConnectionHealthEventState
 import com.v2ray.ang.util.LogUtil
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -33,11 +36,62 @@ object NotificationManager {
     private const val NOTIFICATION_PENDING_INTENT_RESTART_V2RAY = 2
     private const val NOTIFICATION_ICON_THRESHOLD = 3000
     private const val QUERY_INTERVAL_MS = 3000L
+    private const val HEALTH_NOTIFICATION_ID = 41
+    private const val HEALTH_CHANNEL_ID = "filvless_connection_events"
 
     private var lastQueryTime = 0L
     private var mBuilder: NotificationCompat.Builder? = null
     private var speedNotificationJob: Job? = null
     private var mNotificationManager: NotificationManager? = null
+    private val healthEvents = ConnectionHealthEventState()
+
+    @Synchronized
+    fun resetConnectionHealthEvents() {
+        healthEvents.reset()
+        getNotificationManager()?.cancel(HEALTH_NOTIFICATION_ID)
+    }
+
+    @Synchronized
+    fun onConnectionHealthChanged(state: ConnectionHealth) {
+        when (healthEvents.accept(state)) {
+            ConnectionHealthEvent.LOST -> showHealthEvent(
+                R.string.fv_connection_lost_title, R.string.fv_connection_lost_body,
+            )
+            ConnectionHealthEvent.RESTORED -> showHealthEvent(
+                R.string.fv_connection_restored_title, R.string.fv_connection_restored_body,
+            )
+            null -> Unit
+        }
+    }
+
+    private fun showHealthEvent(titleRes: Int, bodyRes: Int) {
+        val service = getService() ?: return
+        val systemManager = getNotificationManager() ?: return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            systemManager.createNotificationChannel(
+                NotificationChannel(
+                    HEALTH_CHANNEL_ID,
+                    service.getString(R.string.fv_connection_events),
+                    NotificationManager.IMPORTANCE_DEFAULT,
+                ).apply { lockscreenVisibility = Notification.VISIBILITY_PRIVATE },
+            )
+        }
+        val flags = PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        val openApp = PendingIntent.getActivity(
+            service, HEALTH_NOTIFICATION_ID, Intent(service, MainActivity::class.java), flags,
+        )
+        val body = service.getString(bodyRes)
+        val notification = NotificationCompat.Builder(service, HEALTH_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_stat_name)
+            .setContentTitle(service.getString(titleRes))
+            .setContentText(body)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            .setContentIntent(openApp)
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .build()
+        runCatching { systemManager.notify(HEALTH_NOTIFICATION_ID, notification) }
+    }
 
     /**
      * Starts the speed notification.

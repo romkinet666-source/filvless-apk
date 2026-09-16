@@ -50,7 +50,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.v2ray.ang.R
-import com.v2ray.ang.BuildConfig
 import com.v2ray.ang.AppConfig
 
 private val Ink = Color(0xFF0B080F)
@@ -89,11 +88,10 @@ fun FilvlessScreen(
     if (showWhatsNew && state.appUpdate == null) AlertDialog(onDismissRequest = { dismissWhatsNew() },
         containerColor = Card,
         title = { Text(stringResource(R.string.fv_whats_new_title, com.v2ray.ang.BuildConfig.VERSION_NAME)) },
-        text = { Text(stringResource(R.string.fv_whats_new_068)) },
+        text = { Text(stringResource(R.string.fv_whats_new_069)) },
         confirmButton = { TextButton(onClick = { dismissWhatsNew() }) { Text(stringResource(android.R.string.ok)) } })
     var subscriptionText by rememberSaveable { mutableStateOf("") }
     var languagePicker by rememberSaveable { mutableStateOf(false) }
-    var aboutDialog by rememberSaveable { mutableStateOf(false) }
     var fullServerName by rememberSaveable { mutableStateOf<String?>(null) }
     var forgetDialog by rememberSaveable { mutableStateOf(false) }
     val view = LocalView.current
@@ -257,7 +255,7 @@ fun FilvlessScreen(
                     FilvlessSettingsContent(state, servers.isNotEmpty() || state.groups.any { it.id.isNotBlank() && it.id != AppConfig.DEFAULT_SUBSCRIPTION_ID }, servers.size,
                         onLanguage = { feedback(); languagePicker = true },
                         onSubscription = { feedback(); com.v2ray.ang.util.Utils.openUri(context, "https://t.me/filvless_bot") },
-                        onAbout = { feedback(); aboutDialog = true },
+                        onAbout = { feedback(); onNavigate(MainDestination.About) },
                         onForget = { feedback(); forgetDialog = true },
                         onDevices = { feedback(); onNavigate(MainDestination.Devices) },
                         onAction = act)
@@ -352,13 +350,6 @@ fun FilvlessScreen(
             }
         }, confirmButton = {},
         dismissButton = { TextButton(onClick = { languagePicker = false }) { Text(stringResource(R.string.fv_cancel)) } },
-    )
-    if (aboutDialog) AlertDialog(
-        onDismissRequest = { aboutDialog = false }, containerColor = Card,
-        title = { Text(stringResource(R.string.fv_about)) },
-        text = { Column { Text(stringResource(R.string.fv_about_description)); Spacer(Modifier.height(16.dp)); Text(stringResource(R.string.fv_version, BuildConfig.VERSION_NAME), color = Muted) } },
-        confirmButton = { TextButton(onClick = { aboutDialog = false; onNavigate(MainDestination.About) }) { Text(stringResource(R.string.fv_licenses)) } },
-        dismissButton = { TextButton(onClick = { aboutDialog = false }) { Text(stringResource(R.string.fv_close)) } },
     )
     if (forgetDialog) AlertDialog(
         onDismissRequest = { forgetDialog = false }, containerColor = Card,
