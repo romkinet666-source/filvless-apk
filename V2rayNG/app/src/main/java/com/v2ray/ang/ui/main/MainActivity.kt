@@ -2,6 +2,8 @@ package com.v2ray.ang.ui.main
 
 import android.content.Intent
 import android.net.VpnService
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.Build
 import android.os.Bundle
 import android.view.KeyEvent
@@ -64,7 +66,7 @@ class MainActivity : HelperBaseComponentActivity() {
     private val requestVpnPermission =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
             if (it.resultCode == RESULT_OK && mainViewModel.uiState.value.connectionPending) startV2Ray()
-            else mainViewModel.connectionCancelled()
+            else mainViewModel.connectionRejected(R.string.fv_error_vpn_permission)
         }
 
     private val profileEditorLauncher =
@@ -142,6 +144,11 @@ class MainActivity : HelperBaseComponentActivity() {
         super.onResume()
         mainViewModel.checkAppUpdateOnResume()
         mainViewModel.onAction(MainAction.RefreshGroups)
+        val purchaseOpened = MmkvManager.decodeSettingsString("filvless_purchase_return")?.toLongOrNull()
+        if (purchaseOpened != null && System.currentTimeMillis() - purchaseOpened in 1..86_400_000L) {
+            MmkvManager.encodeSettings("filvless_purchase_return", "")
+            mainViewModel.onAction(MainAction.UpdateSubscriptions)
+        }
     }
 
     @Composable
@@ -221,6 +228,17 @@ class MainActivity : HelperBaseComponentActivity() {
     private fun requestServiceStart() {
         if (mainViewModel.uiState.value.connectionPending || mainViewModel.uiState.value.isRunning) return
         if (mainViewModel.uiState.value.selectedGuid.isNullOrBlank()) return
+        val connectivity = getSystemService(ConnectivityManager::class.java)
+        val hasInternet = connectivity.allNetworks.any { network ->
+            connectivity.getNetworkCapabilities(network)?.let { capabilities ->
+                capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+                    !capabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN)
+            } == true
+        }
+        if (!hasInternet) {
+            mainViewModel.connectionRejected(R.string.fv_error_no_network)
+            return
+        }
         mainViewModel.connectionRequested()
         if (!SettingsManager.isVpnMode()) {
             startV2Ray()

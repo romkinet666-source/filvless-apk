@@ -59,7 +59,7 @@ class MainRepository(
                 AppConfig.MSG_STATE_RUNNING -> MainServiceEvent.StateRunning
                 AppConfig.MSG_STATE_NOT_RUNNING -> MainServiceEvent.StateNotRunning
                 AppConfig.MSG_STATE_START_SUCCESS -> MainServiceEvent.StateStartSuccess
-                AppConfig.MSG_STATE_START_FAILURE -> MainServiceEvent.StateStartFailure
+                AppConfig.MSG_STATE_START_FAILURE -> MainServiceEvent.StateStartFailure(safeIntent.getStringExtra("content").orEmpty())
 
                 AppConfig.MSG_STATE_STOP_SUCCESS -> MainServiceEvent.StateStopSuccess
                 AppConfig.MSG_MEASURE_DELAY_RESULT -> safeIntent
@@ -125,6 +125,7 @@ class MainRepository(
 
     override fun writeFilvlessPreference(key: FilvlessPreference, enabled: Boolean): Boolean {
         val saved = MmkvManager.encodeSettings(key.storageKey, enabled)
+        if (saved && key == FilvlessPreference.AUTO_CONNECT) MmkvManager.encodeStartOnBoot(enabled)
         if (saved && key == FilvlessPreference.AUTO_UPDATE_SUBSCRIPTIONS) SubscriptionUpdater.sync(app, true)
         if (saved && key == FilvlessPreference.EXPIRY_REMINDER) com.v2ray.ang.handler.SubscriptionReminder.schedule(app, true)
         return saved
@@ -136,6 +137,7 @@ class MainRepository(
         MmkvManager.setSelectServer("")
         MmkvManager.encodeSettings(AppConfig.CACHE_SUBSCRIPTION_ID, "")
         MmkvManager.encodeSettings(FilvlessPreference.AUTO_CONNECT.storageKey, false)
+        MmkvManager.encodeStartOnBoot(false)
     }
 
     override fun setSelectedSubscriptionId(id: String) {

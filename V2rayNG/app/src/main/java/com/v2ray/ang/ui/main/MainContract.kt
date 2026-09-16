@@ -28,6 +28,7 @@ data class MainUiState(
     val connectionHealth: com.v2ray.ang.service.ConnectionHealth = com.v2ray.ang.service.ConnectionHealth.IDLE,
     val connectionPending: Boolean = false,
     val connectionFailed: Boolean = false,
+    val connectionFailureMessage: Int? = null,
     val subscriptionExpiresAt: Long? = null,
     val subscriptionUpdatedAt: Long = -1,
     val subscriptionUpdateFailed: Boolean = false,

@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.sp
 import com.v2ray.ang.AppConfig
 import com.v2ray.ang.BuildConfig
 import com.v2ray.ang.R
+import com.v2ray.ang.handler.MmkvManager
 import com.v2ray.ang.ui.base.BaseComponentActivity
 import com.v2ray.ang.ui.main.AppUpdateActivity
 import com.v2ray.ang.util.Utils
@@ -65,7 +66,10 @@ private fun FilvlessAboutScreen(onBack: () -> Unit) {
         Spacer(Modifier.height(16.dp))
         Column(Modifier.fillMaxWidth().background(card, RoundedCornerShape(24.dp)).padding(vertical = 4.dp)) {
             AboutRow(stringResource(R.string.fv_support)) { Utils.openUri(context, "https://t.me/Godfather099") }
-            AboutRow(stringResource(R.string.fv_purchase_bot)) { Utils.openUri(context, "https://t.me/filvless_bot") }
+            AboutRow(stringResource(R.string.fv_purchase_bot)) {
+                MmkvManager.encodeSettings("filvless_purchase_return", System.currentTimeMillis().toString())
+                Utils.openUri(context, "https://t.me/filvless_bot")
+            }
         }
         Spacer(Modifier.height(24.dp))
     }

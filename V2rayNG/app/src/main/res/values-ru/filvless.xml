@@ -25,6 +25,10 @@
     <string name="fv_remove">Удалить</string>
     <string name="fv_connecting">Подключение…</string>
     <string name="fv_connection_failed">Не удалось подключиться</string>
+    <string name="fv_error_no_network">Нет доступа к интернету. Проверьте Wi-Fi или мобильную сеть.</string>
+    <string name="fv_error_server_unavailable">Сервер временно недоступен. Попробуйте ещё раз или выберите другой.</string>
+    <string name="fv_error_vpn_permission">Разрешите VPN-подключение в системном окне Android.</string>
+    <string name="fv_error_bad_config">Конфигурация повреждена. Обновите подписку или обратитесь в поддержку.</string>
     <string name="fv_latency">%1$d мс</string>
     <string name="fv_close">Закрыть</string>
     <string name="fv_about_description">Ваш VPN в одном приложении. Добавьте подписку, выберите сервер и подключитесь.\n\nСоздано на основе открытых проектов v2rayNG и Xray.</string>

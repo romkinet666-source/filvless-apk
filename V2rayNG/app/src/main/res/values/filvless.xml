@@ -25,6 +25,10 @@
     <string name="fv_remove">Remove</string>
     <string name="fv_connecting">Connecting…</string>
     <string name="fv_connection_failed">Connection failed</string>
+    <string name="fv_error_no_network">No internet access. Check Wi-Fi or mobile data.</string>
+    <string name="fv_error_server_unavailable">The server is temporarily unavailable. Retry or choose another server.</string>
+    <string name="fv_error_vpn_permission">Allow the VPN connection in the Android system dialog.</string>
+    <string name="fv_error_bad_config">The configuration is damaged. Refresh the subscription or contact support.</string>
     <string name="fv_latency">%1$d ms</string>
     <string name="fv_close">Close</string>
     <string name="fv_about_description">Your VPN in one app. Add a subscription, choose a server and connect.\n\nBuilt on the open-source v2rayNG and Xray projects.</string>

@@ -188,6 +188,9 @@ fun FilvlessScreen(
                                 .padding(horizontal = 20.dp, vertical = 7.dp),
                             color = Color.White, fontSize = 14.sp)
                         Spacer(Modifier.height(12.dp))
+                        state.connectionFailureMessage?.takeIf { state.connectionFailed }?.let { message ->
+                            Text(stringResource(message), color = Color(0xFFFFA6B4), fontSize = 12.sp, modifier = Modifier.padding(bottom = 8.dp))
+                        }
                         val powerLabel = stringResource(if (state.connectionPending) R.string.fv_cancel else if (state.isRunning) R.string.fv_disconnect else R.string.fv_connect)
                         Box(Modifier.size(100.dp).graphicsLayer {
                             scaleX = 1f + .04f * connectionEmphasis + verifiedScale
@@ -233,7 +236,10 @@ fun FilvlessScreen(
                 item {
                     FilvlessSettingsContent(state, servers.isNotEmpty() || state.groups.any { it.id.isNotBlank() && it.id != AppConfig.DEFAULT_SUBSCRIPTION_ID }, servers.size,
                         onLanguage = { languagePicker = true },
-                        onSubscription = { com.v2ray.ang.util.Utils.openUri(context, "https://t.me/filvless_bot") },
+                        onSubscription = {
+                            com.v2ray.ang.handler.MmkvManager.encodeSettings("filvless_purchase_return", System.currentTimeMillis().toString())
+                            com.v2ray.ang.util.Utils.openUri(context, "https://t.me/filvless_bot")
+                        },
                         onAbout = { onNavigate(MainDestination.About) },
                         onForget = { forgetDialog = true },
                         onDevices = { onNavigate(MainDestination.Devices) },

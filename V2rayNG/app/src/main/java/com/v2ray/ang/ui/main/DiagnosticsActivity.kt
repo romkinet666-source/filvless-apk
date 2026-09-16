@@ -71,6 +71,7 @@ class DiagnosticsActivity : BaseComponentActivity() {
                     }) { Text(stringResource(if (copied) R.string.fv_diag_copied else R.string.fv_diag_copy)) }
                 }
                 if (steps.any { it.result == DiagnosticResult.EXPIRED }) Button(onClick = {
+                    MmkvManager.encodeSettings("filvless_purchase_return", System.currentTimeMillis().toString())
                     Utils.openUri(this@DiagnosticsActivity, "https://t.me/filvless_bot")
                 }) { Text(stringResource(R.string.fv_buy_subscription)) }
                 TextButton(onClick = { Utils.openUri(this@DiagnosticsActivity, "https://t.me/Godfather099") }) {

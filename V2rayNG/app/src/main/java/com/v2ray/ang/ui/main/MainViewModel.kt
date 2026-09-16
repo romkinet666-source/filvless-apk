@@ -158,11 +158,17 @@ class MainViewModel(
                 updateRunningState(true)
             }
 
-            MainServiceEvent.StateStartFailure -> {
+            is MainServiceEvent.StateStartFailure -> {
                 toastError(R.string.toast_services_failure)
                 com.v2ray.ang.handler.FilvlessEventLog.add(dataSource.getString(R.string.fv_event_connection_failed))
                 updateRunningState(false)
-                _uiState.update { it.copy(connectionFailed = true) }
+                val message = when {
+                    event.reason.contains("network", true) -> R.string.fv_error_no_network
+                    event.reason.contains("permission", true) -> R.string.fv_error_vpn_permission
+                    event.reason.contains("config", true) -> R.string.fv_error_bad_config
+                    else -> R.string.fv_error_server_unavailable
+                }
+                _uiState.update { it.copy(connectionFailed = true, connectionFailureMessage = message) }
             }
 
             MainServiceEvent.StateStopSuccess -> {
@@ -396,13 +402,13 @@ class MainViewModel(
 
     fun connectionRequested() {
         if (uiState.value.connectionPending || uiState.value.isRunning) return
-        _uiState.update { it.copy(connectionPending = true, connectionFailed = false) }
+        _uiState.update { it.copy(connectionPending = true, connectionFailed = false, connectionFailureMessage = null) }
         connectionTimeoutJob?.cancel()
         connectionTimeoutJob = viewModelScope.launch {
             kotlinx.coroutines.delay(30_000)
             if (uiState.value.connectionPending) {
                 dataSource.sendMsg2Service(AppConfig.MSG_STATE_STOP, "")
-                _uiState.update { it.copy(connectionPending = false, connectionFailed = true) }
+                _uiState.update { it.copy(connectionPending = false, connectionFailed = true, connectionFailureMessage = R.string.fv_error_server_unavailable) }
             }
         }
     }
@@ -410,6 +416,11 @@ class MainViewModel(
     fun connectionCancelled() {
         connectionTimeoutJob?.cancel()
         _uiState.update { it.copy(connectionPending = false) }
+    }
+
+    fun connectionRejected(message: Int) {
+        connectionTimeoutJob?.cancel()
+        _uiState.update { it.copy(connectionPending = false, connectionFailed = true, connectionFailureMessage = message) }
     }
 
     private fun forgetSubscriptions() {
@@ -1097,7 +1108,7 @@ class MainViewModel(
     private fun updateRunningState(running: Boolean, clearTestingText: Boolean = true) {
         if (!running && !clearTestingText && uiState.value.connectionPending) return
         connectionTimeoutJob?.cancel()
-        _uiState.update { it.copy(connectionPending = false, connectionFailed = false) }
+        _uiState.update { it.copy(connectionPending = false, connectionFailed = false, connectionFailureMessage = null) }
         if (!running) {
             sessionTimerJob?.cancel()
             sessionTimerJob = null
